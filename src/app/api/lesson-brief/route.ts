@@ -1,5 +1,6 @@
 import { getOrPromoteActiveChapter, LESSONS_PER_CHAPTER } from "@/lib/chapters";
 import { addDays, taipeiToday } from "@/lib/date";
+import { WRITING_RULES } from "@/lib/lesson-schema";
 import { isAuthorizedMachine, unauthorized } from "@/lib/machine-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -56,6 +57,7 @@ export async function GET(request: Request) {
 
   return Response.json({
     today,
+    writing_rules: WRITING_RULES,
     today_exists: todayLesson !== null,
     chapter: chapter
       ? {

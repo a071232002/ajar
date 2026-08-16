@@ -13,7 +13,17 @@ export const VARIANT_LABELS: Record<(typeof VARIANT_STYLES)[number], string> = {
   angle: "換角度",
 };
 
-export const lessonContentSchema = z.object({
+/**
+ * 句型標記：英文句子用 **…** 圈住要記的句型，前端渲染成螢光筆，TTS 前會剝掉。
+ * 產卡端漏標時整張卡就沒有重點可看，所以在 schema 直接擋下來——
+ * 每天由排程自動產卡，沒有人會回頭檢查，退 400 讓它重產比較實在。
+ */
+export const MIN_MARKED_SPANS = 4;
+const MARK = /\*\*(.+?)\*\*/g;
+
+const countMarks = (text: string) => (text.match(MARK) ?? []).length;
+
+export const lessonContentBase = z.object({
   schema_version: z.literal(2),
   theme: z.object({ en: z.string().min(1), zh: z.string().min(1) }),
   /** 副標：這張卡的溝通目標，如「用 STAR 把專案講成 90 秒的故事」 */
@@ -79,13 +89,38 @@ export const lessonContentSchema = z.object({
     .max(6),
 });
 
-export type LessonContent = z.infer<typeof lessonContentSchema>;
+export const lessonContentSchema = lessonContentBase.superRefine((c, ctx) => {
+  const marked =
+    c.meanings.reduce(
+      (n, m) => n + m.variants.reduce((v, x) => v + countMarks(x.en), 0),
+      0,
+    ) +
+    c.key_points.reduce((n, k) => n + countMarks(k.example_en), 0) +
+    c.dialogue.reduce((n, d) => n + countMarks(d.en), 0) +
+    countMarks(c.exercise.model_en);
+
+  if (marked < MIN_MARKED_SPANS) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `英文句子要用 **…** 標出重要句型，整張卡至少 ${MIN_MARKED_SPANS} 處，目前只有 ${marked} 處`,
+    });
+  }
+});
+
+export type LessonContent = z.infer<typeof lessonContentBase>;
 
 /** POST /api/lesson */
 export const lessonSubmissionSchema = z.object({
   chapter_id: z.string().uuid(),
   content: lessonContentSchema,
 });
+
+/** 產卡端每天讀 brief 才動筆，寫作規則就掛在 brief 上，不靠本機文件同步 */
+export const WRITING_RULES = [
+  `英文句子用 **…** 圈出要背的句型（例：I **owned that piece end to end**.），整張卡至少 ${MIN_MARKED_SPANS} 處，少於此會被退 400。`,
+  "只標句型骨架，不要整句包起來；中文不標。",
+  "meanings 的三個變體 direct / natural / angle 各自要有不同語感，不是同義改寫。",
+] as const;
 
 /** POST /api/chapters（category 自由文字，主題分類不寫死） */
 export const chaptersSubmissionSchema = z.object({
