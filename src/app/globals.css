@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* 深色用 [data-theme] 屬性切換，讓 Tailwind 的 dark: 前綴也認得，
+   否則 dark:xxx 會靜默失效（曾造成深色頁籤字底同色、對比 1.04）。 */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 /* ── C1「牛皮檔案夾」雙主題 tokens ─────────────────────── */
 :root {
   --desk: #cfc5b2;
@@ -7,25 +11,43 @@
   --folder-deep: #c9a873;
   --paper: #fbf7ee;
   --ink: #291f12;
-  --soft: #6e6046;
+  --soft: #5f5238;
+  /* 直接壓在牛皮夾上的字：紙面色階在這裡不夠力，要另一組 */
+  --on-folder: #47381f;
+  --on-folder-soft: #6d5a37;
   --accent: #b23a28;
   --stamp: #8a2f1f;
   --clip: #7a8894;
   --hl: #f5d97e;
   --shadow: rgba(60, 40, 10, 0.25);
 }
+:root {
+  /* 材質：紙纖維雜訊，兩個主題共用同一張，靠混合模式與濃度區分 */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)'/%3E%3C/svg%3E");
+  --grain-blend: multiply;
+  --grain-paper: 0.05;
+  --grain-folder: 0.11;
+  --edge: rgba(41, 31, 18, 0.1); /* 紙張邊緣 */
+}
 [data-theme="dark"] {
-  --desk: #171410;
-  --folder: #4a3a26;
-  --folder-deep: #3c2f1f;
-  --paper: #241f18;
-  --ink: #f4ecdc;
-  --soft: #b5a78d;
-  --accent: #e07a5f;
-  --stamp: #e07a5f;
-  --clip: #8b99a5;
-  --hl: #6b5a22;
-  --shadow: rgba(0, 0, 0, 0.5);
+  /* 深色：拉開三層明度（桌面 → 資料夾 → 紙面），並改用亮邊界補足層次 */
+  --desk: #191510;
+  --folder: #33291b;
+  --folder-deep: #453a26;
+  --paper: #42392a;
+  --ink: #f6efe0;
+  --soft: #d6c9ae;
+  --on-folder: #ece1cb;
+  --on-folder-soft: #bcac8e;
+  --accent: #f08a62;
+  --stamp: #f08a62;
+  --clip: #93a3b0;
+  --hl: #4a3a12;
+  --shadow: rgba(0, 0, 0, 0.62);
+  --grain-blend: overlay;
+  --grain-paper: 0.055;
+  --grain-folder: 0.09;
+  --edge: rgba(246, 239, 224, 0.11);
 }
 
 @theme inline {
@@ -51,6 +73,18 @@ html {
   color: var(--ink);
 }
 
+/* 桌面：極淡的桌布織紋，避免大片死色 */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--grain);
+  mix-blend-mode: var(--grain-blend);
+  opacity: 0.07;
+  pointer-events: none;
+}
+
 body {
   font-family: var(--font-body);
   font-size: 16px;
@@ -67,30 +101,197 @@ body {
   line-height: 1.85;
   letter-spacing: 0.005em;
 }
+/* 句型標記。淺色＝螢光筆；深色改成整塊淡底＋暖亮字——
+   漸層色帶在深色會從字母中間橫切，把字形切斷。 */
 .en mark {
-  background: linear-gradient(transparent 55%, var(--hl) 0);
+  background: linear-gradient(transparent 58%, var(--hl) 0);
   color: inherit;
+  font-weight: 600;
   padding: 0 1px;
 }
+[data-theme="dark"] .en mark {
+  background: var(--hl);
+  color: #ffcc66;
+  border-radius: 3px;
+  /* 內距壓小：跨行時 box-decoration-break 會讓每段各自加內距，太大會顯得零碎 */
+  padding: 1px 3px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
 
-/* 紙頁卡片 */
+/* 紙頁卡片：底色 + 纖維雜訊 + 邊緣。深色下靠亮邊界撐出層次，因為黑陰影在暗背景等於不存在 */
 .sheet {
   position: relative;
+  isolation: isolate;
   background: var(--paper);
+  border: 1px solid var(--edge);
   border-radius: 4px;
   padding: 24px 28px;
-  box-shadow: 0 2px 6px var(--shadow);
+  box-shadow:
+    0 1px 1px var(--shadow),
+    0 3px 10px var(--shadow);
+}
+.sheet::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-image: var(--grain);
+  mix-blend-mode: var(--grain-blend);
+  opacity: var(--grain-paper);
+  pointer-events: none;
+}
+
+/* 牛皮夾外框：更粗的纖維 + 頂緣受光 */
+.folder-skin {
+  position: relative;
+  isolation: isolate;
+  background: var(--folder);
+}
+.folder-skin::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-image: var(--grain);
+  mix-blend-mode: var(--grain-blend);
+  opacity: var(--grain-folder);
+  pointer-events: none;
+}
+.folder-skin::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  /* 頂緣一道受光、底部微暗，讓平面有厚度 */
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.07),
+    transparent 18%,
+    transparent 82%,
+    rgba(0, 0, 0, 0.12)
+  );
+  pointer-events: none;
 }
 .tilt-l { transform: rotate(-0.4deg); }
 .tilt-r { transform: rotate(0.35deg); }
 
-/* 手寫段落標籤 */
-.hand-tag {
-  display: inline-block;
-  font-family: var(--font-hand);
-  font-weight: 600;
+/* 日期步進器：一體成形的紙質分段控制，取代三個各自為政的方框。
+   日期只在這裡出現一次（原本資料夾右上角還重複了一次）。 */
+.daynav {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+}
+.daynav-step {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: var(--on-folder);
   font-size: 20px;
+  line-height: 1;
+}
+a.daynav-step:hover {
   color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.daynav-step.is-off {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.daynav-now {
+  padding: 0 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--on-folder);
+  white-space: nowrap;
+}
+
+/* 變體頁籤：純文字 + 底線指示，不用填色方塊（填色會變成橫幅按鈕感）。
+   但要看得出來能點：未選中維持正文字級與可讀對比，只用顏色與底線區分。 */
+.vtablist {
+  display: flex;
+  gap: 22px;
+  border-bottom: 1px solid var(--edge);
+}
+.vtab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 0 0 9px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--soft);
+  cursor: pointer;
+}
+.vtab:hover {
+  color: var(--ink);
+}
+.vtab[aria-selected="true"] {
+  color: var(--accent);
+  font-weight: 700;
+  border-bottom-color: var(--accent);
+}
+
+/* 每一句的固定版位：播放鍵永遠在左邊同一欄，不隨句子長短跑掉 */
+.say-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.say-row > .say-body {
+  flex: 1;
+  min-width: 0;
+}
+.say-slot {
+  flex: none;
+  width: 40px;
+}
+
+/* 段落標題。
+   不用手寫體：Caveat 沒有中文字符，中文會掉進備援字體，同一行兩種字體打架。
+   手寫體只留給純拉丁的 logo 與 DAY 章。 */
+.hand-tag {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+}
+/* 前導記號：一小段實心色條，取代裝飾性圖示 */
+.hand-tag::before {
+  content: "";
+  flex: none;
+  width: 15px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: translateY(-5px);
+}
+.hand-tag .sub {
+  font-weight: 400;
+  font-size: 15px;
+  color: var(--soft);
+}
+
+/* 案號：壓在牛皮夾上，用 on-folder 色階；字距收斂、字級拉到看得清 */
+.case-label {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--on-folder);
 }
 
 /* 印章 */
@@ -125,4 +326,45 @@ body {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* ── 手機（375px 底線）：字級與間距收斂，避免一句話吃掉整個螢幕 ── */
+@media (max-width: 560px) {
+  .en {
+    font-size: 16.5px;
+    line-height: 1.72;
+  }
+  .sheet {
+    padding: 16px 14px;
+  }
+  .say-row {
+    gap: 9px;
+  }
+  .say-slot {
+    width: 34px;
+  }
+  .say-slot > button {
+    width: 34px;
+    height: 34px;
+  }
+  .say-slot svg {
+    width: 16px;
+    height: 16px;
+  }
+  .hand-tag {
+    font-size: 16px;
+  }
+  .hand-tag .sub {
+    font-size: 14px;
+  }
+  .vtablist {
+    gap: 18px;
+  }
+  .vtab {
+    font-size: 14.5px;
+  }
+  .pager-btn {
+    padding: 5px 10px;
+    font-size: 13px;
+  }
 }

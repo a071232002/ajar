@@ -74,6 +74,10 @@ function clipsOf(content) {
   return clips;
 }
 
+/** 句型標記（雙星號）只給畫面用；送進 TTS 前必須剝掉，否則會唸出星號。
+ *  與 src/lib/markup.tsx 的規則必須一致。 */
+const stripMarks = (t) => t.replace(/\*\*(.+?)\*\*/g, "$1");
+
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 /** 一張卡的配音方案：對話兩角色固定且不同性別；旁白隨機、避免連續重複 */
@@ -155,7 +159,7 @@ async function main() {
   for (const { lesson, missing } of work) {
     console.log(`\n▸ ${lesson.lesson_date}（${missing.length} 句）`);
     for (const clip of missing) {
-      const audio = await tts.generate(clip.text, { voice: clip.voice });
+      const audio = await tts.generate(stripMarks(clip.text), { voice: clip.voice });
       const mp3 = await encodeMp3(audio.audio, audio.sampling_rate);
       const path = `${lesson.id}/${clip.key}.mp3`;
 

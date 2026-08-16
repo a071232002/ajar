@@ -37,3 +37,6 @@ blob-report/
 # --- misc ---
 .DS_Store
 Thumbs.db
+
+# 本機截圖／驗證用的暫存圖（不進版）
+/*.png

@@ -4,6 +4,7 @@ import { useState } from "react";
 import PlayButton from "@/components/PlayButton";
 import type { LessonContent } from "@/lib/lesson-schema";
 import { VARIANT_LABELS } from "@/lib/lesson-schema";
+import { renderMarked } from "@/lib/markup";
 
 type Meaning = LessonContent["meanings"][number];
 
@@ -19,33 +20,29 @@ export default function VariantTabs({
 
   return (
     <div>
-      <div className="flex gap-1.5 border-b-2 border-folder-deep" role="tablist">
+      <div className="vtablist" role="tablist">
         {meaning.variants.map((v, i) => (
           <button
             key={v.style}
             role="tab"
             aria-selected={i === active}
             onClick={() => setActive(i)}
-            className={`rounded-t-md border border-b-0 border-folder-deep px-4 py-1.5 text-[13.5px] ${
-              i === active
-                ? "bg-paper font-medium text-ink"
-                : "bg-folder-deep text-paper opacity-75 dark:text-ink"
-            }`}
+            className="vtab"
           >
             {VARIANT_LABELS[v.style]}
           </button>
         ))}
       </div>
       {meaning.variants.map((v, i) => (
-        <div key={v.style} hidden={i !== active} className="pt-4">
-          <p className="en">
-            {v.en}
-            <PlayButton
-              id={`m${meaningIndex}v${i}`}
-              clipKeys={[`m${meaningIndex}v${i}`]}
-            />
-          </p>
-          <p className="mt-2.5 text-[14.5px] text-soft">※ {v.note_zh}</p>
+        <div key={v.style} hidden={i !== active} className="say-row pt-4">
+          <PlayButton
+            id={`m${meaningIndex}v${i}`}
+            clipKeys={[`m${meaningIndex}v${i}`]}
+          />
+          <div className="say-body">
+            <p className="en">{renderMarked(v.en)}</p>
+            <p className="mt-2.5 text-[14.5px] text-soft">※ {v.note_zh}</p>
+          </div>
         </div>
       ))}
     </div>
