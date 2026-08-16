@@ -26,12 +26,13 @@ jobs:
       - name: 安裝相依套件
         run: npm ci --no-audit --no-fund
 
-      # Kokoro 模型約 90MB，快取後每天省下下載時間
+      # transformers.js 把模型快取在套件目錄下（實測路徑，非 ~/.cache/huggingface）；
+      # 約 90MB，快取後每天省下重新下載。
       - name: 快取 Kokoro 模型
         uses: actions/cache@v4
         with:
-          path: ~/.cache/huggingface
-          key: kokoro-82m-v1.0-onnx
+          path: node_modules/@huggingface/transformers/.cache
+          key: kokoro-82m-v1-onnx-q8
 
       - name: 產生缺少的語音
         env:
