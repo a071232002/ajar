@@ -1,0 +1,45 @@
+name: 每日產生學習卡語音
+
+# routine 於台北 05:00 產出卡片，這裡 05:30 接手把音檔補齊。
+# 冪等：只處理缺口，失敗隔天自動補跑。
+on:
+  schedule:
+    - cron: "30 21 * * *" # UTC 21:30 = 台北 05:30
+  workflow_dispatch:
+    inputs:
+      lesson_date:
+        description: "只處理某一天（YYYY-MM-DD），留空則處理最近幾張"
+        required: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 安裝相依套件
+        run: npm ci --no-audit --no-fund
+
+      # Kokoro 模型約 90MB，快取後每天省下下載時間
+      - name: 快取 Kokoro 模型
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: kokoro-82m-v1.0-onnx
+
+      - name: 產生缺少的語音
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -n "${{ inputs.lesson_date }}" ]; then
+            node scripts/generate-audio.mjs --lesson-date "${{ inputs.lesson_date }}"
+          else
+            node scripts/generate-audio.mjs --limit 3
+          fi
