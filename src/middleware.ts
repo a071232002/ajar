@@ -4,7 +4,13 @@ import { NextResponse, type NextRequest } from "next/server";
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
 /** CRON_SECRET 鑑權的機器端點，不走使用者 session */
-const MACHINE_PATHS = ["/api/lesson-brief", "/api/lesson", "/api/chapters", "/api/plan"];
+const MACHINE_PATHS = [
+  "/api/lesson-brief",
+  "/api/lesson",
+  "/api/chapters",
+  "/api/plan",
+  "/api/revalidate",
+];
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
@@ -36,9 +42,13 @@ export async function middleware(request: NextRequest) {
     },
   );
 
+  // getUser() 每次都要打一趟 Supabase Auth；getClaims() 用本機快取的 JWKS 驗簽，
+  // 省掉每次導覽的一個網路來回。代價：登出後的 token 要等自然過期才失效，
+  // 單人站可以接受。
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: claims,
+  } = await supabase.auth.getClaims();
+  const user = claims?.claims ?? null;
 
   if (!user && path !== "/login") {
     const url = request.nextUrl.clone();

@@ -3,7 +3,6 @@ import NavLink from "@/components/NavLink";
 import PlayButton from "@/components/PlayButton";
 import ReadDoneButton from "@/components/ReadDoneButton";
 import VariantTabs from "@/components/VariantTabs";
-import VoiceSelect from "@/components/VoiceSelect";
 import { allClipKeys, clipTexts } from "@/lib/clips";
 import { formatLessonDate } from "@/lib/date";
 import { renderMarked } from "@/lib/markup";
@@ -93,8 +92,7 @@ export default function LessonView({
           <p className="mt-1 font-mono text-[13px] text-soft">{c.theme.en}</p>
           <p className="mt-2 text-[14.5px] text-soft">{c.goal_zh}</p>
           {/* 連播控制放封面卡右下：整張卡的動作，屬於封面而不是資料夾邊條 */}
-          <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
-            <VoiceSelect />
+          <div className="mt-4 flex justify-end">
             <PlayButton id="all" clipKeys={allKeys} variant="pill" label="全部連播" />
           </div>
         </div>

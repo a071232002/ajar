@@ -1,3 +1,5 @@
+import { revalidateTag } from "next/cache";
+import { TAG_LESSONS, TAG_PLANS } from "@/lib/lesson-data";
 import { advanceChapterIfComplete } from "@/lib/chapters";
 import { taipeiToday } from "@/lib/date";
 import { lessonSubmissionSchema } from "@/lib/lesson-schema";
@@ -107,6 +109,10 @@ export async function POST(request: Request) {
     .eq("status", "planned");
 
   await advanceChapterIfComplete(db, chapter_id);
+
+  // 讀取路徑有快取，寫完必須清掉，否則網站會一直顯示舊卡
+  revalidateTag(TAG_LESSONS);
+  revalidateTag(TAG_PLANS);
 
   return Response.json({ lesson_id: lesson.id, lesson_date: today }, { status: 201 });
 }

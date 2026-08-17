@@ -185,6 +185,23 @@ async function main() {
       console.log(`  ✓ ${clip.key.padEnd(9)} ${clip.voice.padEnd(12)} ${(mp3.length / 1024) | 0}KB`);
     }
   }
+  // 音檔是直接寫進 Supabase 的，不經過網站任何寫入端，所以要主動叫它清讀取快取；
+  // 否則今天稍早開過網站的話，那份「還沒有音檔」的結果會被鎖住。
+  const appUrl = process.env.APP_URL;
+  const secret = process.env.CRON_SECRET;
+  if (appUrl && secret) {
+    try {
+      const r = await fetch(`${appUrl}/api/revalidate`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${secret}`, "content-type": "application/json" },
+        body: JSON.stringify({ tags: ["lessons"] }),
+      });
+      console.log(`  快取失效：HTTP ${r.status}`);
+    } catch (e) {
+      console.log(`  快取失效失敗（不影響音檔本身）：${e.message}`);
+    }
+  }
+
   console.log("\n完成。");
 }
 

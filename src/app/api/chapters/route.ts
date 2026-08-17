@@ -1,3 +1,5 @@
+import { revalidateTag } from "next/cache";
+import { TAG_LESSONS } from "@/lib/lesson-data";
 import { chaptersSubmissionSchema } from "@/lib/lesson-schema";
 import { isAuthorizedMachine, unauthorized } from "@/lib/machine-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -51,6 +53,8 @@ export async function POST(request: Request) {
   if (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
+
+  revalidateTag(TAG_LESSONS);
 
   return Response.json({ inserted: data?.length ?? 0 }, { status: 201 });
 }

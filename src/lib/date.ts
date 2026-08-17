@@ -34,3 +34,31 @@ export function formatLessonDate(date: string): string {
   }).format(d);
   return `${md} · ${weekday}`;
 }
+
+/** 該日期所屬週的星期一 */
+export function mondayOf(date: string): string {
+  const dow = (new Date(`${date}T00:00:00Z`).getUTCDay() + 6) % 7;
+  return addDays(date, -dow);
+}
+
+/**
+ * 一週橫跨兩個月時，這週算哪個月？—— 看星期四那天。
+ * 星期四是七天的第四天，所以它所在的月份必定占這週至少四天，
+ * 「多數決」與 ISO 8601 的定義在這裡剛好一致。
+ */
+export function weekMonth(monday: string): { year: number; month: number } {
+  const thursday = addDays(monday, 3);
+  return { year: Number(thursday.slice(0, 4)), month: Number(thursday.slice(5, 7)) };
+}
+
+/**
+ * 某年某月的第一週（回傳該週星期一）。
+ * 含 1 號的那一週若星期四還落在上個月（例如 2026-11-01 是週日，整週有六天在十月），
+ * 就往後推一週，否則選了十一月會看到一個標示為十月的畫面。
+ */
+export function firstWeekOfMonth(year: number, month: number): string {
+  const first = `${year}-${String(month).padStart(2, "0")}-01`;
+  const monday = mondayOf(first);
+  const w = weekMonth(monday);
+  return w.year === year && w.month === month ? monday : addDays(monday, 7);
+}

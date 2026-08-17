@@ -1,3 +1,5 @@
+import { revalidateTag } from "next/cache";
+import { TAG_PLANS } from "@/lib/lesson-data";
 import { getOrPromoteActiveChapter } from "@/lib/chapters";
 import { taipeiToday } from "@/lib/date";
 import { planSubmissionSchema } from "@/lib/lesson-schema";
@@ -70,6 +72,8 @@ export async function POST(request: Request) {
     }
     return Response.json({ error: error.message }, { status: 500 });
   }
+
+  revalidateTag(TAG_PLANS);
 
   return Response.json({ upserted: data?.length ?? 0 }, { status: 201 });
 }

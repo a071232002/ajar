@@ -1,23 +1,18 @@
-import LessonView, { type LessonRow } from "@/components/LessonView";
-import { lessonAudioUrls } from "@/lib/audio";
+import LessonView from "@/components/LessonView";
 import { categoryZh } from "@/lib/categories";
 import { diffDays, taipeiToday } from "@/lib/date";
-import { neighborLessonDates } from "@/lib/lesson-nav";
-import { createClient } from "@/lib/supabase/server";
+import {
+  getAudioUrls,
+  getFirstLessonDate,
+  getLesson,
+  getNeighborDates,
+} from "@/lib/lesson-data";
 
 export const dynamic = "force-dynamic";
 
-type Row = LessonRow & { chapters: { category: string } | null };
-
 export default async function TodayPage() {
-  const supabase = await createClient();
   const today = taipeiToday();
-
-  const { data: lesson } = await supabase
-    .from("daily_lessons")
-    .select("id, lesson_date, theme_en, theme_zh, content, read_at, chapters(category)")
-    .eq("lesson_date", today)
-    .maybeSingle<Row>();
+  const lesson = await getLesson(today);
 
   if (!lesson) {
     return (
@@ -33,18 +28,13 @@ export default async function TodayPage() {
     );
   }
 
-  const [{ data: first }, { prevDate, nextDate }, audioUrls] = await Promise.all([
-    supabase
-      .from("daily_lessons")
-      .select("lesson_date")
-      .order("lesson_date", { ascending: true })
-      .limit(1)
-      .single<{ lesson_date: string }>(),
-    neighborLessonDates(supabase, lesson.lesson_date),
-    lessonAudioUrls(supabase, lesson.id),
+  const [first, { prevDate, nextDate }, audioUrls] = await Promise.all([
+    getFirstLessonDate(),
+    getNeighborDates(lesson.lesson_date),
+    getAudioUrls(lesson.id),
   ]);
 
-  const dayNumber = first ? diffDays(lesson.lesson_date, first.lesson_date) + 1 : 1;
+  const dayNumber = first ? diffDays(lesson.lesson_date, first) + 1 : 1;
 
   return (
     <LessonView

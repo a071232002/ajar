@@ -1,14 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { firstWeekOfMonth } from "@/lib/date";
 
-/** 行事曆上方的年/月選擇：選了就跳到該月第一週 */
+/** 行事曆上方的年/月選擇：選了就跳到「算作該月」的第一週 */
 export default function MonthJump({ year, month }: { year: number; month: number }) {
   const router = useRouter();
   const years = [year - 1, year, year + 1].filter((v, i, a) => a.indexOf(v) === i);
 
   function jump(y: number, m: number) {
-    router.push(`/calendar?d=${y}-${String(m).padStart(2, "0")}-01`);
+    // 不能直接跳 1 號：含 1 號的那週可能大半落在上個月，畫面會標示成上個月
+    router.push(`/calendar?d=${firstWeekOfMonth(y, m)}`);
   }
 
   return (
