@@ -407,3 +407,207 @@ a.daynav-step:hover {
   color: var(--accent);
   opacity: 1;
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   材質層 — 疊在線上那份之上，色票一個 hex 都沒動。
+
+   要解決的是「都是背板、都是平面」：現在每個面都只有一個純色加一層雜訊，
+   所以看起來是色塊不是東西。以下只做三件事 ——
+   讓紙有厚度、讓夾子有結構、讓光有方向。
+
+   大膽的地方只花在一個位置：檔案夾的索引標籤頁。
+   那是這個隱喻本來就該有、但一直缺的東西。
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── 紙 ──────────────────────────────────────────────────────────
+   單層陰影是平面感的元兇。真實的紙有兩種影子：
+   壓在桌面的接觸影（很緊、很短）與環境遮蔽影（很散、很淡）。 */
+.sheet {
+  border-radius: 3px;
+  box-shadow:
+    0 1px 1.5px rgba(60, 40, 10, 0.13),
+    0 3px 6px -2px rgba(60, 40, 10, 0.10),
+    0 12px 24px -10px var(--shadow);
+}
+[data-theme="dark"] .sheet {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 10px 26px -12px rgba(0, 0, 0, 0.7);
+}
+
+/* 纖維：兩個尺度。單一尺度看起來像數位雜訊，疊起來才像紙 */
+.sheet::before {
+  background-size: 140px 140px, 43px 43px;
+}
+.folder-skin::before {
+  background-size: 140px 140px, 67px 67px;
+}
+
+/* 紙的厚度：上緣受光、下緣落影。就 1px，但少了紙片就變色塊 */
+.sheet::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(60, 40, 10, 0.07);
+}
+[data-theme="dark"] .sheet::after {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.055),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* 一疊紙不會每張一樣白。極小的色溫差，看不出來但感覺得到 */
+.sheet:nth-of-type(3n + 2) { background-color: color-mix(in srgb, var(--paper) 97%, #d9c9a8); }
+.sheet:nth-of-type(4n + 3) { background-color: color-mix(in srgb, var(--paper) 98%, #cbd3d8); }
+
+/* ── 牛皮夾 ───────────────────────────────────────────────────────
+   ::before 併掉雜訊與受光，把 ::after 空出來做標籤頁。 */
+.folder-skin::before {
+  background-image:
+    var(--grain),
+    linear-gradient(90deg,
+      rgba(0, 0, 0, 0.06) 0 1px,
+      rgba(255, 255, 255, 0.07) 1px 3px,
+      transparent 3px),                       /* 左側折痕 */
+    linear-gradient(to bottom,
+      rgba(255, 255, 255, 0.10),
+      transparent 14%,
+      transparent 86%,
+      rgba(0, 0, 0, 0.14));                   /* 頂緣受光、底部沉下去 */
+  background-repeat: repeat, no-repeat, no-repeat;
+  mix-blend-mode: normal;
+}
+/* 雜訊本身仍要混合，所以另外開一層專門放它 */
+.folder-skin {
+  background-image: var(--grain);
+  background-blend-mode: var(--grain-blend);
+  border-radius: 3px 3px 10px 10px;
+}
+
+/* 索引標籤頁 —— 這一版的記憶點。
+   從夾子頂緣長出來，跟夾子同色同材質，是同一片紙折上來的。 */
+.folder-skin::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -17px;
+  left: 26px;
+  width: 132px;
+  height: 20px;
+  border-radius: 5px 12px 0 0;
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.14), transparent 60%),
+    var(--folder);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 -2px 5px -2px var(--shadow);
+  /* 右緣切斜，像真的標籤 */
+  clip-path: polygon(0 0, 88% 0, 100% 100%, 0 100%);
+  pointer-events: none;
+}
+[data-theme="dark"] .folder-skin::after {
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05), transparent 60%),
+    var(--folder);
+}
+
+/* 夾子要有厚度：左側一道板材邊 */
+.folder-skin {
+  box-shadow:
+    inset 3px 0 0 -1px rgba(0, 0, 0, 0.07),
+    0 12px 30px var(--shadow);
+}
+[data-theme="dark"] .folder-skin {
+  box-shadow:
+    inset 3px 0 0 -1px rgba(255, 255, 255, 0.05),
+    0 12px 30px var(--shadow);
+}
+
+/* ── 字與筆跡 ─────────────────────────────────────────────────────
+   淺色時標題有極淡的壓印感（凹進紙裡）。深色不做，會糊掉。 */
+.hand-tag {
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+[data-theme="dark"] .hand-tag {
+  text-shadow: none;
+}
+
+/* 螢光筆：真的螢光筆不會兩端切齊，也不會完全水平 */
+.en mark {
+  background: linear-gradient(
+    100deg,
+    transparent 0 2px,
+    var(--hl) 2px 98%,
+    transparent 98%
+  );
+  background-size: 100% 62%;
+  background-position: 0 92%;
+  background-repeat: no-repeat;
+  padding: 0 2px;
+  margin: 0 -2px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+/* 深色維持整塊底，漸層在暗背景會把字切斷 */
+[data-theme="dark"] .en mark {
+  background: var(--hl);
+  background-size: auto;
+  background-position: initial;
+  color: #ffcc66;
+  border-radius: 3px;
+  padding: 1px 3px;
+  margin: 0 -3px;
+}
+
+/* ── 手機 ─────────────────────────────────────────────────────── */
+@media (max-width: 560px) {
+  .folder-skin::after {
+    top: -14px;
+    left: 16px;
+    width: 104px;
+    height: 17px;
+  }
+}
+
+/* ── 語言維度 ────────────────────────────────────────────────────
+   兩種語言在視覺上要分得開，否則同一個版面看久了會忘記自己在看哪一種。 */
+.lang-tag {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 0 6px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  vertical-align: 1px;
+  color: #fff;
+}
+.lang-tag.lang-en { background: #2f6f8f; }
+.lang-tag.lang-ja { background: #b23a28; }
+[data-theme="dark"] .lang-tag.lang-en { background: #3d88ad; }
+[data-theme="dark"] .lang-tag.lang-ja { background: #d4573f; }
+
+.langsw {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+}
+.langsw-item {
+  padding: 3px 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--on-folder-soft);
+  background: transparent;
+}
+.langsw-item + .langsw-item { border-left: 1px solid var(--edge); }
+.langsw-item[aria-current="true"] { color: #fff; }
+.langsw-item[aria-current="true"].lang-en { background: #2f6f8f; }
+.langsw-item[aria-current="true"].lang-ja { background: #b23a28; }

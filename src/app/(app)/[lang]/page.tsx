@@ -1,18 +1,31 @@
+import { notFound } from "next/navigation";
 import LessonView from "@/components/LessonView";
 import { categoryZh } from "@/lib/categories";
 import { diffDays, taipeiToday } from "@/lib/date";
+import { isLang } from "@/lib/lang";
 import {
   getAudioUrls,
   getFirstLessonDate,
   getLesson,
   getNeighborDates,
 } from "@/lib/lesson-data";
+import { getProfile } from "@/lib/profile-data";
 
 export const dynamic = "force-dynamic";
 
-export default async function TodayPage() {
+export default async function TodayPage({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}) {
+  const { lang } = await params;
+  if (!isLang(lang)) notFound();
+
+  const profile = await getProfile();
+  if (!profile) notFound();
+
   const today = taipeiToday();
-  const lesson = await getLesson(today);
+  const lesson = await getLesson(profile.id, lang, today);
 
   if (!lesson) {
     return (
@@ -29,8 +42,8 @@ export default async function TodayPage() {
   }
 
   const [first, { prevDate, nextDate }, audioUrls] = await Promise.all([
-    getFirstLessonDate(),
-    getNeighborDates(lesson.lesson_date),
+    getFirstLessonDate(profile.id, lang),
+    getNeighborDates(profile.id, lang, lesson.lesson_date),
     getAudioUrls(lesson.id),
   ]);
 
@@ -39,6 +52,7 @@ export default async function TodayPage() {
   return (
     <LessonView
       lesson={lesson}
+      lang={lang}
       dayNumber={dayNumber}
       categoryZh={categoryZh(lesson.chapters?.category ?? "")}
       prevDate={prevDate}

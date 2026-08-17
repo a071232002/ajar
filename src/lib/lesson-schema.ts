@@ -111,7 +111,13 @@ export type LessonContent = z.infer<typeof lessonContentBase>;
 
 /** POST /api/lesson */
 export const lessonSubmissionSchema = z.object({
-  chapter_id: z.string().uuid(),
+  /** 多使用者：排程要指明這張卡是誰的；單人時可省略，由伺服端補上唯一使用者 */
+  user_id: z.string().uuid().optional(),
+  lang: z.enum(["en", "ja"]).default("en"),
+  topic_id: z.string().uuid().optional(),
+  /** 日文：這張卡你這一方講話的敬語階層 */
+  register: z.string().max(24).optional(),
+  chapter_id: z.string().uuid().optional(),
   content: lessonContentSchema,
   /**
    * 覆寫今天已存在的卡片。預設 false——排程重跑時要維持 409，不能默默改掉已讀的卡。
@@ -143,11 +149,14 @@ export const chaptersSubmissionSchema = z.object({
 
 /** POST /api/plan（未來主題預排；月曆分頁「看未來」的資料） */
 export const planSubmissionSchema = z.object({
+  user_id: z.string().uuid().optional(),
+  lang: z.enum(["en", "ja"]).default("en"),
   plans: z
     .array(
       z.object({
         date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-        chapter_id: z.string().uuid().optional(), // 省略 = 當前 active 章節
+        topic_id: z.string().uuid().optional(),
+        chapter_id: z.string().uuid().optional(),
         title_en: z.string().min(1),
         title_zh: z.string().min(1),
       }),

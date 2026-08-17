@@ -129,6 +129,9 @@ async function loadKokoro() {
 async function main() {
   let query = db
     .from("daily_lessons")
+    // 只處理英文：kokoro-js 的 phonemizer 只支援 en-us/en-gb，
+    // 日文要走 misaki[ja]（Python），是另一條管線
+    .eq("lang", "en")
     .select("id, lesson_date, content")
     .order("lesson_date", { ascending: false })
     .limit(LIMIT);

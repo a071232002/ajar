@@ -1,8 +1,8 @@
 import { revalidateTag } from "next/cache";
 import { TAG_PLANS } from "@/lib/lesson-data";
-import { getOrPromoteActiveChapter } from "@/lib/chapters";
 import { taipeiToday } from "@/lib/date";
 import { planSubmissionSchema } from "@/lib/lesson-schema";
+import { resolveOwner } from "@/lib/machine-user";
 import { isAuthorizedMachine, unauthorized } from "@/lib/machine-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -34,6 +34,10 @@ export async function POST(request: Request) {
   const db = createAdminClient();
   const today = taipeiToday();
 
+  const owner = await resolveOwner(db, parsed.data.user_id);
+  if ("error" in owner) return Response.json({ error: owner.error }, { status: 400 });
+  const lang = parsed.data.lang;
+
   const past = parsed.data.plans.filter((p) => p.date < today);
   if (past.length > 0) {
     return Response.json(
@@ -42,25 +46,37 @@ export async function POST(request: Request) {
     );
   }
 
-  const fallbackChapter = await getOrPromoteActiveChapter(db);
-
+  // 排程補的一律 source='auto'；使用者在行事曆上排的走 server action，那邊寫 'user'，
+  // 這裡的 upsert 不會覆蓋到它們（下面有 source 條件）
   const rows = parsed.data.plans.map((p) => ({
+    user_id: owner.userId,
+    lang,
     plan_date: p.date,
-    chapter_id: p.chapter_id ?? fallbackChapter?.id,
+    topic_id: p.topic_id ?? null,
+    chapter_id: p.chapter_id ?? null,
     title_en: p.title_en,
     title_zh: p.title_zh,
     status: "planned" as const,
+    source: "auto" as const,
   }));
-  if (rows.some((r) => !r.chapter_id)) {
-    return Response.json(
-      { error: "沒有可用章節（chapter_id 未指定且無 active/pending 章節）" },
-      { status: 400 },
-    );
+
+  // 使用者手動指定的日子不得被排程蓋掉
+  const { data: locked } = await db
+    .from("theme_plan")
+    .select("plan_date")
+    .eq("user_id", owner.userId)
+    .eq("lang", lang)
+    .eq("source", "user")
+    .in("plan_date", rows.map((r) => r.plan_date));
+  const lockedDates = new Set((locked ?? []).map((l) => l.plan_date));
+  const writable = rows.filter((r) => !lockedDates.has(r.plan_date));
+  if (writable.length === 0) {
+    return Response.json({ upserted: 0, skipped_user_plans: [...lockedDates] }, { status: 201 });
   }
 
   const { data, error } = await db
     .from("theme_plan")
-    .upsert(rows, { onConflict: "plan_date" })
+    .upsert(writable, { onConflict: "user_id,lang,plan_date" })
     .select("plan_date");
 
   if (error) {
@@ -75,7 +91,10 @@ export async function POST(request: Request) {
 
   revalidateTag(TAG_PLANS);
 
-  return Response.json({ upserted: data?.length ?? 0 }, { status: 201 });
+  return Response.json(
+    { upserted: data?.length ?? 0, skipped_user_plans: [...lockedDates] },
+    { status: 201 },
+  );
 }
 
 /** 檢視預排（今天起） */

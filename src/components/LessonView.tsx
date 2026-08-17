@@ -5,6 +5,7 @@ import ReadDoneButton from "@/components/ReadDoneButton";
 import VariantTabs from "@/components/VariantTabs";
 import { allClipKeys, clipTexts } from "@/lib/clips";
 import { formatLessonDate } from "@/lib/date";
+import { LANG_TAG, type Lang } from "@/lib/lang";
 import { renderMarked } from "@/lib/markup";
 import type { LessonContent } from "@/lib/lesson-schema";
 
@@ -19,6 +20,7 @@ export type LessonRow = {
 
 export default function LessonView({
   lesson,
+  lang,
   dayNumber,
   categoryZh,
   prevDate,
@@ -26,6 +28,7 @@ export default function LessonView({
   audioUrls,
 }: {
   lesson: LessonRow;
+  lang: Lang;
   dayNumber: number;
   categoryZh: string;
   /** 最近一張較舊/較新卡片的日期（無則 null） */
@@ -46,12 +49,13 @@ export default function LessonView({
         {/* 資料夾頭部：案號 · 日期步進器 · 播放控制 */}
         <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
           <span className="case-label">
+            <span className={`lang-tag lang-${lang}`}>{LANG_TAG[lang]}</span>
             {categoryZh} · CASE #{String(dayNumber).padStart(3, "0")}
           </span>
           <nav className="daynav ml-auto" aria-label="切換日期">
             {prevDate ? (
               <NavLink
-                href={`/lesson/${prevDate}`}
+                href={`/${lang}/lesson/${prevDate}`}
                 className="daynav-step"
                 aria-label="前一張"
               >
@@ -67,7 +71,7 @@ export default function LessonView({
             </span>
             {nextDate ? (
               <NavLink
-                href={`/lesson/${nextDate}`}
+                href={`/${lang}/lesson/${nextDate}`}
                 className="daynav-step"
                 aria-label="後一張"
               >

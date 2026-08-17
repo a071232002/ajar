@@ -1,9 +1,9 @@
 import { revalidateTag } from "next/cache";
 import { TAG_LESSONS, TAG_PLANS } from "@/lib/lesson-data";
-import { advanceChapterIfComplete } from "@/lib/chapters";
 import { taipeiToday } from "@/lib/date";
 import { lessonSubmissionSchema } from "@/lib/lesson-schema";
 import { isAuthorizedMachine, unauthorized } from "@/lib/machine-auth";
+import { resolveOwner } from "@/lib/machine-user";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -30,18 +30,14 @@ export async function POST(request: Request) {
     );
   }
 
-  const { chapter_id, content, replace } = parsed.data;
+  const { chapter_id, content, replace, lang, topic_id, register } = parsed.data;
   const db = createAdminClient();
   const today = taipeiToday();
 
-  const { data: chapter } = await db
-    .from("chapters")
-    .select("id")
-    .eq("id", chapter_id)
-    .maybeSingle();
-  if (!chapter) {
-    return Response.json({ error: "chapter_id 不存在" }, { status: 400 });
-  }
+  const owner = await resolveOwner(db, parsed.data.user_id);
+  if ("error" in owner) return Response.json({ error: owner.error }, { status: 400 });
+
+
 
   // 明確要求覆寫時才刪。vocab_items 與 lesson_audio 靠 FK cascade 清掉，但 storage
   // 的檔案不會跟著走（路徑是 {lesson_id}/{clip}.mp3，新卡是新 id），要自己收。
@@ -49,7 +45,7 @@ export async function POST(request: Request) {
     const { data: stale } = await db
       .from("daily_lessons")
       .select("id")
-      .eq("lesson_date", today)
+      .eq("user_id", owner.userId).eq("lang", lang).eq("lesson_date", today)
       .maybeSingle();
 
     if (stale) {
@@ -66,8 +62,12 @@ export async function POST(request: Request) {
   const { data: lesson, error: insertError } = await db
     .from("daily_lessons")
     .insert({
+      user_id: owner.userId,
+      lang,
+      topic_id: topic_id ?? null,
+      register: register ?? null,
       lesson_date: today,
-      chapter_id,
+      chapter_id: chapter_id ?? null,
       theme_en: content.theme.en,
       theme_zh: content.theme.zh,
       content,
@@ -105,10 +105,9 @@ export async function POST(request: Request) {
   await db
     .from("theme_plan")
     .update({ status: "used" })
-    .eq("plan_date", today)
+    .eq("user_id", owner.userId).eq("lang", lang).eq("plan_date", today)
     .eq("status", "planned");
 
-  await advanceChapterIfComplete(db, chapter_id);
 
   // 讀取路徑有快取，寫完必須清掉，否則網站會一直顯示舊卡
   revalidateTag(TAG_LESSONS);

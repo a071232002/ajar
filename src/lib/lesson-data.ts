@@ -32,12 +32,12 @@ export type LessonRecord = {
 
 /** 某天的卡片（含章節分類）。找不到回 null。 */
 export const getLesson = unstable_cache(
-  async (date: string): Promise<LessonRecord | null> => {
+  async (userId: string, lang: string, date: string): Promise<LessonRecord | null> => {
     const db = createAdminClient();
     const { data } = await db
       .from("daily_lessons")
       .select("id, lesson_date, theme_en, theme_zh, content, read_at, chapters(category)")
-      .eq("lesson_date", date)
+      .eq("user_id", userId).eq("lang", lang).eq("lesson_date", date)
       .maybeSingle<LessonRecord>();
     return data ?? null;
   },
@@ -47,20 +47,20 @@ export const getLesson = unstable_cache(
 
 /** 前後最近一張卡的日期（供左右切換） */
 export const getNeighborDates = unstable_cache(
-  async (date: string): Promise<{ prevDate: string | null; nextDate: string | null }> => {
+  async (userId: string, lang: string, date: string): Promise<{ prevDate: string | null; nextDate: string | null }> => {
     const db = createAdminClient();
     const [{ data: prev }, { data: next }] = await Promise.all([
       db
         .from("daily_lessons")
         .select("lesson_date")
-        .lt("lesson_date", date)
+        .eq("user_id", userId).eq("lang", lang).lt("lesson_date", date)
         .order("lesson_date", { ascending: false })
         .limit(1)
         .maybeSingle<{ lesson_date: string }>(),
       db
         .from("daily_lessons")
         .select("lesson_date")
-        .gt("lesson_date", date)
+        .eq("user_id", userId).eq("lang", lang).gt("lesson_date", date)
         .order("lesson_date", { ascending: true })
         .limit(1)
         .maybeSingle<{ lesson_date: string }>(),
@@ -73,11 +73,13 @@ export const getNeighborDates = unstable_cache(
 
 /** 全站第一張卡的日期，用來算 DAY N。只有第一次寫入時會變。 */
 export const getFirstLessonDate = unstable_cache(
-  async (): Promise<string | null> => {
+  async (userId: string, lang: string): Promise<string | null> => {
     const db = createAdminClient();
     const { data } = await db
       .from("daily_lessons")
       .select("lesson_date")
+      .eq("user_id", userId)
+      .eq("lang", lang)
       .order("lesson_date", { ascending: true })
       .limit(1)
       .maybeSingle<{ lesson_date: string }>();
@@ -109,30 +111,52 @@ export const getAudioUrls = unstable_cache(
   { tags: [TAG_LESSONS], revalidate: 120 },
 );
 
+type TopicRef = { title_zh: string; category: string } | null;
+
 export type WeekRow = {
-  lessons: { lesson_date: string; theme_zh: string; read_at: string | null }[];
-  plans: { plan_date: string; title_zh: string }[];
+  lessons: {
+    lesson_date: string; theme_zh: string; read_at: string | null;
+    topic_id: string | null; topics: TopicRef;
+  }[];
+  plans: {
+    plan_date: string; title_zh: string; source: string;
+    topic_id: string | null; topics: TopicRef;
+  }[];
 };
 
-/** 一整週的卡片與預排——行事曆一次要的就是這個日期區間 */
-export const getWeek = unstable_cache(
-  async (from: string, to: string): Promise<WeekRow> => {
+/**
+ * 一整週的卡片與預排。
+ * 這一支刻意不快取：行事曆是使用者會即時編輯的頁面（指定某天、排集中期），
+ * 快取只會讓剛存的東西看不到。值得快取的是不會變的卡片內容，不是這個。
+ */
+export async function getWeek(
+  userId: string,
+  lang: string,
+  from: string,
+  to: string,
+): Promise<WeekRow> {
     const db = createAdminClient();
     const [{ data: lessons }, { data: plans }] = await Promise.all([
       db
         .from("daily_lessons")
-        .select("lesson_date, theme_zh, read_at")
+        .select("lesson_date, theme_zh, read_at, topic_id, topics(title_zh, category)")
+        .eq("user_id", userId).eq("lang", lang)
         .gte("lesson_date", from)
         .lte("lesson_date", to),
       db
         .from("theme_plan")
-        .select("plan_date, title_zh")
+        .select("plan_date, title_zh, source, topic_id, topics(title_zh, category)")
+        .eq("user_id", userId).eq("lang", lang)
         .eq("status", "planned")
         .gte("plan_date", from)
         .lte("plan_date", to),
     ]);
-    return { lessons: lessons ?? [], plans: plans ?? [] };
-  },
-  ["calendar-week"],
-  { tags: [TAG_LESSONS, TAG_PLANS], revalidate: DAY },
-);
+    // Supabase 把巢狀關聯推斷成陣列，實際上是 0..1 筆
+    const one = (t: unknown): TopicRef =>
+      Array.isArray(t) ? ((t[0] as TopicRef) ?? null) : ((t as TopicRef) ?? null);
+
+    return {
+      lessons: (lessons ?? []).map((l) => ({ ...l, topics: one(l.topics) })) as WeekRow["lessons"],
+      plans: (plans ?? []).map((p) => ({ ...p, topics: one(p.topics) })) as WeekRow["plans"],
+    };
+}

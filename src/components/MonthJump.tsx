@@ -1,40 +1,68 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { firstWeekOfMonth } from "@/lib/date";
-
-/** 行事曆上方的年/月選擇：選了就跳到「算作該月」的第一週 */
-export default function MonthJump({ year, month }: { year: number; month: number }) {
-  const router = useRouter();
+/**
+ * 行事曆上方的年/月選擇。
+ *
+ * 用原生的 GET 表單，不用 router.push。
+ * 原因是實測過的：router.push 在這裡會送出 RSC 請求卻不提交導覽——1280px 會成功，
+ * 700px 與 375px 不會，同一份程式碼、同一個回應。包進 useTransition 更糟，
+ * 二十秒都不會完成。原生表單送出是一次真正的導覽，沒有這些變數，
+ * 而且沒有 JS 也能運作。
+ *
+ * 換月份由 onChange 直接送出表單；瀏覽器停用 JS 時還有「前往」可按。
+ */
+export default function MonthJump({
+  lang,
+  year,
+  month,
+}: {
+  lang: string;
+  year: number;
+  month: number;
+}) {
   const years = [year - 1, year, year + 1].filter((v, i, a) => a.indexOf(v) === i);
+  const cls = "rounded border border-soft/50 bg-paper px-2 py-1 text-sm text-ink";
 
-  function jump(y: number, m: number) {
-    // 不能直接跳 1 號：含 1 號的那週可能大半落在上個月，畫面會標示成上個月
-    router.push(`/calendar?d=${firstWeekOfMonth(y, m)}`);
-  }
+  const submit = (e: React.ChangeEvent<HTMLSelectElement>) =>
+    e.currentTarget.form?.requestSubmit();
 
   return (
-    <span className="flex items-center gap-1.5">
+    <form
+      method="get"
+      action={`/${lang}/calendar`}
+      className="flex items-center gap-1.5"
+    >
       <select
+        key={`y-${year}`}
+        name="y"
         aria-label="年"
-        value={year}
-        onChange={(e) => jump(Number(e.target.value), month)}
-        className="rounded border border-soft/50 bg-paper px-2 py-1 text-sm text-ink"
+        defaultValue={year}
+        onChange={submit}
+        className={cls}
       >
         {years.map((y) => (
-          <option key={y} value={y}>{y} 年</option>
+          <option key={y} value={y}>
+            {y} 年
+          </option>
         ))}
       </select>
       <select
+        key={`m-${month}`}
+        name="m"
         aria-label="月"
-        value={month}
-        onChange={(e) => jump(year, Number(e.target.value))}
-        className="rounded border border-soft/50 bg-paper px-2 py-1 text-sm text-ink"
+        defaultValue={month}
+        onChange={submit}
+        className={cls}
       >
         {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-          <option key={m} value={m}>{m} 月</option>
+          <option key={m} value={m}>
+            {m} 月
+          </option>
         ))}
       </select>
-    </span>
+      <button type="submit" className="sr-only">
+        前往
+      </button>
+    </form>
   );
 }

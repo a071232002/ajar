@@ -27,8 +27,8 @@ const notoSansTC = Noto_Sans_TC({
 });
 
 export const metadata: Metadata = {
-  title: "ajar — 每天，為英文留一道縫",
-  description: "Keep your English ajar.",
+  title: "ajar — 每天，為外語留一道縫",
+  description: "Keep your languages ajar.",
 };
 
 /** 在 hydration 前套用主題，避免深色使用者看到閃白 */

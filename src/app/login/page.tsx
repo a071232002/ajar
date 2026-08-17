@@ -33,7 +33,7 @@ export default function LoginPage() {
           ajar
         </h1>
         <p className="mb-8 mt-1 text-center font-mono text-xs text-soft">
-          Keep your English ajar.
+          Keep your languages ajar.
         </p>
 
         <form onSubmit={onSubmit} className="flex flex-col gap-3">
