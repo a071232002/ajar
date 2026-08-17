@@ -67,8 +67,9 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={pending}
-            className="mt-2 rounded-md bg-accent px-4 py-2.5 font-bold text-white shadow-[3px_3px_0_var(--shadow)] transition-transform active:translate-y-0.5 disabled:opacity-60"
+            className="mt-2 inline-flex items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 font-bold text-white shadow-[3px_3px_0_var(--shadow)] transition-transform active:translate-y-0.5 disabled:opacity-60"
           >
+            {pending && <span className="nav-spinner" aria-hidden />}
             {pending ? "進入中…" : "進入"}
           </button>
         </form>

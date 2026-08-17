@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import NavLink from "@/components/NavLink";
+import SubmitButton from "@/components/SubmitButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import { LANG_TAG, LANG_ZH, isLang, type Lang } from "@/lib/lang";
 
@@ -37,7 +37,7 @@ export default function TopNav({ langs }: { langs: Lang[] }) {
     langs.length > 1 ? (
       <div className="langsw" role="group" aria-label="切換語言">
         {langs.map((l) => (
-          <Link
+          <NavLink
             key={l}
             href={swapLang(l)}
             aria-current={l === active ? "true" : undefined}
@@ -45,7 +45,7 @@ export default function TopNav({ langs }: { langs: Lang[] }) {
             className={`langsw-item lang-${l}`}
           >
             {LANG_TAG[l]}
-          </Link>
+          </NavLink>
         ))}
       </div>
     ) : null;
@@ -54,9 +54,9 @@ export default function TopNav({ langs }: { langs: Lang[] }) {
     <>
       <header className="sticky top-0 z-10 h-14 border-b border-folder-deep/50 bg-desk">
         <div className="mx-auto flex h-full max-w-[960px] items-center justify-between px-5">
-          <Link href={base} className="font-hand text-2xl font-semibold">
+          <NavLink href={base} className="font-hand text-2xl font-semibold">
             ajar
-          </Link>
+          </NavLink>
 
           <nav className="hidden items-center gap-5 sm:flex" aria-label="主選單">
             {langSwitch}
@@ -67,7 +67,7 @@ export default function TopNav({ langs }: { langs: Lang[] }) {
             ))}
             <ThemeToggle />
             <form action="/auth/signout" method="post">
-              <button className="text-[15px] text-soft hover:text-ink">⎋ 登出</button>
+              <SubmitButton variant="link" pendingLabel="登出中…">⎋ 登出</SubmitButton>
             </form>
           </nav>
 
@@ -75,7 +75,7 @@ export default function TopNav({ langs }: { langs: Lang[] }) {
             {langSwitch}
             <ThemeToggle />
             <form action="/auth/signout" method="post">
-              <button className="text-[15px] text-soft">⎋</button>
+              <SubmitButton variant="link" pendingLabel="…">⎋</SubmitButton>
             </form>
           </nav>
         </div>

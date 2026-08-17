@@ -2,6 +2,7 @@ import {
   createFocusBlock,
   deleteFocusBlock,
 } from "@/app/(app)/[lang]/calendar/actions";
+import SubmitButton from "@/components/SubmitButton";
 import { LANG_ZH, type Lang } from "@/lib/lang";
 
 type Topic = { id: string; title_zh: string };
@@ -61,9 +62,9 @@ export default function FocusBlockForm({
                 <input type="hidden" name="id" value={b.id} />
                 <input type="hidden" name="lang" value={lang} />
                 <input type="hidden" name="back" value={back} />
-                <button type="submit" className="text-[12.5px] text-soft hover:text-accent">
+                <SubmitButton variant="link" pendingLabel="取消中…">
                   取消
-                </button>
+                </SubmitButton>
               </form>
             </li>
           ))}
@@ -113,12 +114,7 @@ export default function FocusBlockForm({
               </option>
             ))}
           </select>
-          <button
-            type="submit"
-            className="rounded-md bg-accent px-5 py-1.5 text-[14px] font-medium text-white"
-          >
-            排定
-          </button>
+          <SubmitButton pendingLabel="排定中…">排定</SubmitButton>
         </form>
       )}
     </div>

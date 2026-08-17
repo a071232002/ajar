@@ -611,3 +611,29 @@ a.daynav-step:hover {
 .langsw-item[aria-current="true"] { color: #fff; }
 .langsw-item[aria-current="true"].lang-en { background: #2f6f8f; }
 .langsw-item[aria-current="true"].lang-ja { background: #b23a28; }
+
+/* ── 播放進度 ────────────────────────────────────────────────────
+   單句：沿著圓形鍵外緣的環。連播：藏在膠囊鍵底下的填色。
+   都不佔額外版位——每句一顆鍵，再加十幾條進度條會把版面切碎。 */
+.play-ring {
+  position: absolute;
+  inset: -2px;
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  transform: rotate(-90deg);
+  color: var(--accent);
+  pointer-events: none;
+}
+button:hover > .play-ring,
+.border-accent.bg-accent > .play-ring {
+  color: #fff;
+}
+
+.playbar-fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  transition: transform 0.15s linear;
+  pointer-events: none;
+}

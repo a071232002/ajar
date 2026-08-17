@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { clearDayPlan, setDayPlan } from "@/app/(app)/[lang]/calendar/actions";
+import SubmitButton from "@/components/SubmitButton";
 import type { Lang } from "@/lib/lang";
 
 type Topic = { id: string; title_zh: string };
@@ -27,7 +28,7 @@ export default function DayEditor({
   current: { title_zh: string; source: string } | null;
 }) {
   const [open, setOpen] = useState(false);
-  const [pending, start] = useTransition();
+  const [, start] = useTransition();
   const router = useRouter();
 
   const run = (action: (fd: FormData) => Promise<void>) => (fd: FormData) => {
@@ -75,13 +76,7 @@ export default function DayEditor({
           placeholder="想指定題目就填（可留空）"
           className="min-w-0 flex-1 rounded border border-soft/40 bg-paper px-2 py-1 text-[14px] text-ink placeholder:text-soft/60"
         />
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded bg-accent px-3 py-1 text-[13px] font-medium text-white disabled:opacity-60"
-        >
-          存
-        </button>
+        <SubmitButton size="sm" pendingLabel="存…">存</SubmitButton>
       </form>
 
       <div className="mt-2 flex items-center gap-3">
@@ -89,13 +84,9 @@ export default function DayEditor({
           <form action={run(clearDayPlan)}>
             <input type="hidden" name="lang" value={lang} />
             <input type="hidden" name="date" value={date} />
-            <button
-              type="submit"
-              disabled={pending}
-              className="text-[12.5px] text-soft hover:text-accent disabled:opacity-60"
-            >
+            <SubmitButton variant="link" pendingLabel="清除中…">
               清掉這天
-            </button>
+            </SubmitButton>
           </form>
         )}
         <button

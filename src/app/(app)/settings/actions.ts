@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { LANGS, isLang, type Lang } from "@/lib/lang";
 import { createClient } from "@/lib/supabase/server";
 
@@ -34,6 +35,7 @@ export async function saveProfile(formData: FormData) {
   });
 
   revalidatePath("/", "layout");
+  redirect("/settings?saved=profile");
 }
 
 /** 主題勾選：整組覆寫，比逐一增刪好推理 */
@@ -48,6 +50,7 @@ export async function saveTopicPicks(formData: FormData) {
       .insert(picked.map((topic_id) => ({ user_id: user.id, topic_id })));
   }
   revalidatePath("/", "layout");
+  redirect("/settings?saved=topics");
 }
 
 /** 自訂主題 */
@@ -68,4 +71,5 @@ export async function addTopic(formData: FormData) {
     await db.from("user_topics").insert({ user_id: user.id, topic_id: data.id });
   }
   revalidatePath("/", "layout");
+  redirect("/settings?saved=topic-added");
 }

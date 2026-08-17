@@ -5,26 +5,6 @@ import { stripMarks } from "@/lib/markup";
  * 把卡片內容展開成「可播放的句子」清單。
  * key 同時是 UI 播放鍵與音檔的 clip_key——scripts/generate-audio.mjs 必須產生一致的 key。
  */
-/** 給語音用：一律剝掉 ** 標記，否則 TTS 會把星號唸出來 */
-export function clipTexts(content: LessonContent): Record<string, string> {
-  const map: Record<string, string> = {};
-  content.meanings.forEach((m, i) =>
-    m.variants.forEach((v, j) => {
-      map[`m${i}v${j}`] = stripMarks(v.en);
-    }),
-  );
-  content.key_points.forEach((k, i) => {
-    map[`kp${i}`] = stripMarks(k.example_en);
-  });
-  content.dialogue.forEach((d, i) => {
-    map[`dlg${i}`] = stripMarks(d.en);
-  });
-  map.exercise = stripMarks(content.exercise.model_en);
-  content.vocab.forEach((v, i) => {
-    map[`v${i}`] = stripMarks(v.phrase);
-  });
-  return map;
-}
 
 /** 全部連播的順序 */
 export function allClipKeys(content: LessonContent): string[] {

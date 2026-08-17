@@ -1,3 +1,4 @@
+import SubmitButton from "@/components/SubmitButton";
 import { categoryZh } from "@/lib/categories";
 import { LANGS, LANG_ZH } from "@/lib/lang";
 import { getProfile, getTopics } from "@/lib/profile-data";
@@ -5,7 +6,18 @@ import { addTopic, saveProfile, saveTopicPicks } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function SettingsPage() {
+const SAVED_MSG: Record<string, string> = {
+  profile: "語言與個人背景已儲存",
+  topics: "主題勾選已儲存",
+  "topic-added": "主題已新增，並自動勾選",
+};
+
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ saved?: string }>;
+}) {
+  const { saved } = await searchParams;
   const [profile, topics] = await Promise.all([getProfile(), getTopics()]);
   if (!profile) return null;
 
@@ -18,6 +30,16 @@ export default async function SettingsPage() {
     <div className="mx-auto max-w-[700px]" data-testid="settings">
       <div className="folder-skin relative rounded-xl px-4 pb-6 pt-4 shadow-[0_12px_30px_var(--shadow)] sm:px-5">
         <p className="case-label mb-4">設定</p>
+
+        {saved && SAVED_MSG[saved] && (
+          <p
+            role="status"
+            data-testid="saved-banner"
+            className="mb-4 rounded-md border border-accent/40 bg-hl/25 px-4 py-2.5 text-[14px] text-ink"
+          >
+            ✓ {SAVED_MSG[saved]}
+          </p>
+        )}
 
         {/* ── 語言 ── */}
         <form action={saveProfile} className="sheet animate-sheet-in mb-4">
@@ -72,12 +94,9 @@ export default async function SettingsPage() {
             這一欄不綁語言 —— 你的背景講英文講日文都一樣。
           </p>
 
-          <button
-            type="submit"
-            className="mt-4 rounded-md bg-accent px-6 py-2 font-medium text-white"
-          >
-            儲存
-          </button>
+          <div className="mt-4">
+            <SubmitButton>儲存</SubmitButton>
+          </div>
         </form>
 
         {/* ── 主題勾選 ── */}
@@ -122,12 +141,7 @@ export default async function SettingsPage() {
             </div>
           ))}
 
-          <button
-            type="submit"
-            className="rounded-md bg-accent px-6 py-2 font-medium text-white"
-          >
-            儲存勾選
-          </button>
+          <SubmitButton>儲存勾選</SubmitButton>
         </form>
 
         {/* ── 自訂主題 ── */}
@@ -155,12 +169,9 @@ export default async function SettingsPage() {
                 </option>
               ))}
             </select>
-            <button
-              type="submit"
-              className="rounded-md border-2 border-accent px-5 py-1.5 font-medium text-accent"
-            >
+            <SubmitButton variant="outline" pendingLabel="新增中…">
               新增
-            </button>
+            </SubmitButton>
           </div>
         </form>
       </div>
