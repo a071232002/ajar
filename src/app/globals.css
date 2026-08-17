@@ -592,6 +592,22 @@ a.daynav-step:hover {
 [data-theme="dark"] .lang-tag.lang-en { background: #3d88ad; }
 [data-theme="dark"] .lang-tag.lang-ja { background: #d4573f; }
 
+/* 敬語階層章：日文卡專屬，靠邊框而非底色，才不會跟語言標籤搶注意力 */
+.register-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border: 1px solid var(--edge);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--on-folder-soft);
+}
+.register-badge b {
+  font-weight: 700;
+  color: var(--on-folder);
+}
+
 .langsw {
   display: inline-flex;
   overflow: hidden;

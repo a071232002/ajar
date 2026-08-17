@@ -7,10 +7,12 @@ type CookieToSet = { name: string; value: string; options: CookieOptions };
 const MACHINE_PATHS = [
   "/api/lesson-brief",
   "/api/lesson",
-  "/api/chapters",
   "/api/plan",
   "/api/revalidate",
 ];
+
+/** 不需要登入就能看的頁面 */
+const PUBLIC_PATHS = ["/login", "/guest"];
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
@@ -50,7 +52,7 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getClaims();
   const user = claims?.claims ?? null;
 
-  if (!user && path !== "/login") {
+  if (!user && !PUBLIC_PATHS.includes(path)) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

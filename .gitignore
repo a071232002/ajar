@@ -29,6 +29,7 @@ supabase/.branches/
 supabase/.temp/
 
 # --- 測試與執行產物 ---
+__pycache__/
 playwright-report/
 test-results/
 blob-report/

@@ -53,7 +53,6 @@ export async function POST(request: Request) {
     lang,
     plan_date: p.date,
     topic_id: p.topic_id ?? null,
-    chapter_id: p.chapter_id ?? null,
     title_en: p.title_en,
     title_zh: p.title_zh,
     status: "planned" as const,
@@ -104,7 +103,7 @@ export async function GET(request: Request) {
   const db = createAdminClient();
   const { data } = await db
     .from("theme_plan")
-    .select("plan_date, chapter_id, title_en, title_zh, status")
+    .select("plan_date, title_en, title_zh, status")
     .gte("plan_date", taipeiToday())
     .order("plan_date");
 

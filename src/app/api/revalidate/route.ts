@@ -1,10 +1,11 @@
 import { revalidateTag } from "next/cache";
+import { TAG_GUEST } from "@/lib/guest-data";
 import { TAG_LESSONS, TAG_PLANS } from "@/lib/lesson-data";
 import { isAuthorizedMachine, unauthorized } from "@/lib/machine-auth";
 
 export const dynamic = "force-dynamic";
 
-const KNOWN = new Set([TAG_LESSONS, TAG_PLANS]);
+const KNOWN = new Set([TAG_LESSONS, TAG_PLANS, TAG_GUEST]);
 
 /**
  * 讓「繞過本站直接寫 Supabase」的流程能清掉讀取快取。

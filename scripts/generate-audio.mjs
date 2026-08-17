@@ -52,6 +52,7 @@ const argOf = (name) => {
 };
 const LIMIT = Number(argOf("--limit") ?? 5);
 const ONLY_DATE = argOf("--lesson-date");
+const GUEST = args.includes("--guest");
 
 /** 從卡片內容展開所有要念的句子；key 必須與 UI 的播放鍵一致 */
 function clipsOf(content) {
@@ -126,7 +127,68 @@ async function loadKokoro() {
   });
 }
 
+/**
+ * 音檔是直接寫進 Supabase 的，不經過網站任何寫入端，所以要主動叫它清讀取快取；
+ * 否則今天稍早開過網站的話，那份「還沒有音檔」的結果會被鎖住。
+ */
+async function revalidate() {
+  const appUrl = process.env.APP_URL;
+  const secret = process.env.CRON_SECRET;
+  if (!appUrl || !secret) return;
+  try {
+    const r = await fetch(`${appUrl}/api/revalidate`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${secret}`, "content-type": "application/json" },
+      body: JSON.stringify({ tags: ["lessons", "guest"] }),
+    });
+    console.log(`  快取失效：HTTP ${r.status}`);
+  } catch (e) {
+    console.log(`  快取失效失敗（不影響音檔本身）：${e.message}`);
+  }
+}
+
+/** 訪客頁那幾句：沒有對話結構，用不同聲音輪著念 */
+async function runGuest() {
+  const { data: rows, error } = await db
+    .from("guest_phrases")
+    .select("id, sort_order, target")
+    .eq("lang", "en")
+    .is("audio_path", null)
+    .order("sort_order");
+  if (error) throw new Error(error.message);
+  if (!rows?.length) return console.log("訪客頁的英文句子都有音檔了。");
+
+  console.log(`訪客頁：${rows.length} 句缺音檔`);
+  const tts = await loadKokoro();
+
+  for (const [i, row] of rows.entries()) {
+    const voice = NARRATION_POOL[i % NARRATION_POOL.length];
+    const audio = await tts.generate(stripMarks(row.target), { voice });
+    const mp3 = await encodeMp3(audio.audio, audio.sampling_rate);
+    const path = `guest/en-${row.sort_order}.mp3`;
+
+    const { error: upErr } = await db.storage
+      .from(BUCKET)
+      .upload(path, mp3, { contentType: "audio/mpeg", upsert: true });
+    if (upErr) throw new Error(`上傳失敗 ${path}: ${upErr.message}`);
+
+    const { error: dbErr } = await db
+      .from("guest_phrases")
+      .update({ audio_path: path })
+      .eq("id", row.id);
+    if (dbErr) throw new Error(`寫入失敗 ${path}: ${dbErr.message}`);
+
+    console.log(`  ✓ ${path.padEnd(20)} ${voice.padEnd(12)} ${(mp3.length / 1024) | 0}KB`);
+  }
+}
+
 async function main() {
+  if (GUEST) {
+    await runGuest();
+    await revalidate();
+    return console.log("\n完成。");
+  }
+
   let query = db
     .from("daily_lessons")
     // 只處理英文：kokoro-js 的 phonemizer 只支援 en-us/en-gb，
@@ -188,23 +250,7 @@ async function main() {
       console.log(`  ✓ ${clip.key.padEnd(9)} ${clip.voice.padEnd(12)} ${(mp3.length / 1024) | 0}KB`);
     }
   }
-  // 音檔是直接寫進 Supabase 的，不經過網站任何寫入端，所以要主動叫它清讀取快取；
-  // 否則今天稍早開過網站的話，那份「還沒有音檔」的結果會被鎖住。
-  const appUrl = process.env.APP_URL;
-  const secret = process.env.CRON_SECRET;
-  if (appUrl && secret) {
-    try {
-      const r = await fetch(`${appUrl}/api/revalidate`, {
-        method: "POST",
-        headers: { authorization: `Bearer ${secret}`, "content-type": "application/json" },
-        body: JSON.stringify({ tags: ["lessons"] }),
-      });
-      console.log(`  快取失效：HTTP ${r.status}`);
-    } catch (e) {
-      console.log(`  快取失效失敗（不影響音檔本身）：${e.message}`);
-    }
-  }
-
+  await revalidate();
   console.log("\n完成。");
 }
 

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import NavLink from "@/components/NavLink";
 import { notFound } from "next/navigation";
 import DayEditor from "@/components/DayEditor";
 import FocusBlockForm from "@/components/FocusBlockForm";
@@ -58,21 +58,21 @@ export default async function CalendarPage({
     <div className="mx-auto max-w-[700px]" data-testid="calendar">
       <div className="sheet animate-sheet-in">
         <div className="mb-4 flex items-center justify-between gap-2">
-          <Link
+          <NavLink
             href={`/${lang}/calendar?d=${addDays(monday, -7)}`}
             aria-label="上一週"
             className="rounded border border-soft/50 bg-paper px-3 py-1 text-sm text-soft hover:text-ink"
           >
             ‹ 上週
-          </Link>
+          </NavLink>
           <MonthJump lang={lang} year={year} month={month} />
-          <Link
+          <NavLink
             href={`/${lang}/calendar?d=${addDays(monday, 7)}`}
             aria-label="下一週"
             className="rounded border border-soft/50 bg-paper px-3 py-1 text-sm text-soft hover:text-ink"
           >
             下週 ›
-          </Link>
+          </NavLink>
         </div>
 
         {/* 跨月的那一週，光看月份選單看不出實際範圍 */}
@@ -100,6 +100,7 @@ export default async function CalendarPage({
             return (
               <li
                 key={date}
+                data-date={date}
                 className={`border-b border-folder-deep/30 px-2 py-2.5 ${
                   isToday ? "bg-hl/30" : ""
                 }`}
@@ -119,9 +120,9 @@ export default async function CalendarPage({
                     {detail && (
                       <p className="truncate text-[13px] text-soft">
                         {lesson ? (
-                          <Link href={`/${lang}/lesson/${date}`} className="hover:text-ink">
+                          <NavLink href={`/${lang}/lesson/${date}`} className="hover:text-ink">
                             {detail}
-                          </Link>
+                          </NavLink>
                         ) : (
                           detail
                         )}

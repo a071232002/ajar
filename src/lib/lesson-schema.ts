@@ -117,7 +117,6 @@ export const lessonSubmissionSchema = z.object({
   topic_id: z.string().uuid().optional(),
   /** 日文：這張卡你這一方講話的敬語階層 */
   register: z.string().max(24).optional(),
-  chapter_id: z.string().uuid().optional(),
   content: lessonContentSchema,
   /**
    * 覆寫今天已存在的卡片。預設 false——排程重跑時要維持 409，不能默默改掉已讀的卡。
@@ -133,20 +132,6 @@ export const WRITING_RULES = [
   "meanings 的三個變體 direct / natural / angle 各自要有不同語感，不是同義改寫。",
 ] as const;
 
-/** POST /api/chapters（category 自由文字，主題分類不寫死） */
-export const chaptersSubmissionSchema = z.object({
-  chapters: z
-    .array(
-      z.object({
-        title_en: z.string().min(1),
-        title_zh: z.string().min(1),
-        category: z.string().min(1).max(32),
-      }),
-    )
-    .min(1)
-    .max(24),
-});
-
 /** POST /api/plan（未來主題預排；月曆分頁「看未來」的資料） */
 export const planSubmissionSchema = z.object({
   user_id: z.string().uuid().optional(),
@@ -156,7 +141,6 @@ export const planSubmissionSchema = z.object({
       z.object({
         date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
         topic_id: z.string().uuid().optional(),
-        chapter_id: z.string().uuid().optional(),
         title_en: z.string().min(1),
         title_zh: z.string().min(1),
       }),

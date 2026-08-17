@@ -1,0 +1,42 @@
+name: 每季清理舊音檔
+
+# 音檔是唯一會無限長大的東西（一張卡二三十句），卡片文字本身留著不佔空間。
+# 每季清一次 90 天前的音檔，順便收掉孤兒目錄（覆寫卡片與遷移都會留下）。
+on:
+  schedule:
+    - cron: "0 20 1 1,4,7,10 *" # UTC 20:00 → 台北隔日 04:00，每季首月一號
+  workflow_dispatch:
+    inputs:
+      keep_days:
+        description: "保留天數"
+        default: "90"
+      apply:
+        description: "真的刪除（取消勾選只會試跑報告）"
+        type: boolean
+        default: false
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: 清理
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          # 排程跑的時候直接執行；手動觸發時預設只試跑，要勾 apply 才真的刪
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.apply }}" = "true" ]; then
+            node scripts/prune-audio.mjs --keep-days "${{ inputs.keep_days || 90 }}" --apply
+          else
+            node scripts/prune-audio.mjs --keep-days "${{ inputs.keep_days || 90 }}"
+          fi

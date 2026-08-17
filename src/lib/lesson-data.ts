@@ -27,7 +27,9 @@ export type LessonRecord = {
   theme_zh: string;
   content: LessonContent;
   read_at: string | null;
-  chapters: { category: string } | null;
+  /** 日文：這張卡你這一方的敬語階層 */
+  register: string | null;
+  topics: { category: string; title_zh: string } | null;
 };
 
 /** 某天的卡片（含章節分類）。找不到回 null。 */
@@ -36,10 +38,13 @@ export const getLesson = unstable_cache(
     const db = createAdminClient();
     const { data } = await db
       .from("daily_lessons")
-      .select("id, lesson_date, theme_en, theme_zh, content, read_at, chapters(category)")
+      .select("id, lesson_date, theme_en, theme_zh, content, read_at, register, topics(category, title_zh)")
       .eq("user_id", userId).eq("lang", lang).eq("lesson_date", date)
-      .maybeSingle<LessonRecord>();
-    return data ?? null;
+      .maybeSingle<LessonRecord & { topics: unknown }>();
+    if (!data) return null;
+    // Supabase 把巢狀關聯推斷成陣列，實際上是 0..1 筆
+    const t = data.topics;
+    return { ...data, topics: (Array.isArray(t) ? t[0] : t) ?? null };
   },
   ["lesson-by-date"],
   { tags: [TAG_LESSONS], revalidate: DAY },

@@ -3,7 +3,7 @@ import NavLink from "@/components/NavLink";
 import PlayButton from "@/components/PlayButton";
 import ReadDoneButton from "@/components/ReadDoneButton";
 import VariantTabs from "@/components/VariantTabs";
-import { allClipKeys, clipTexts } from "@/lib/clips";
+import { allClipKeys } from "@/lib/clips";
 import { formatLessonDate } from "@/lib/date";
 import { LANG_TAG, type Lang } from "@/lib/lang";
 import { renderMarked } from "@/lib/markup";
@@ -16,6 +16,8 @@ export type LessonRow = {
   theme_zh: string;
   content: LessonContent;
   read_at: string | null;
+  /** 日文：這張卡你這一方講話的敬語階層（丁寧／くだけた／尊敬…）。英文卡為 null。 */
+  register: string | null;
 };
 
 export default function LessonView({
@@ -34,24 +36,29 @@ export default function LessonView({
   /** 最近一張較舊/較新卡片的日期（無則 null） */
   prevDate: string | null;
   nextDate: string | null;
-  /** clip_key → 公開音檔 URL（缺的自動退回瀏覽器語音） */
+  /** clip_key → 公開音檔 URL；沒有的句子播放鍵會停用 */
   audioUrls: Record<string, string>;
 }) {
   const c = lesson.content;
   const allKeys = allClipKeys(c);
-  const texts = clipTexts(c);
 
   return (
     <div data-testid="lesson">
-      <AudioProvider urls={audioUrls} texts={texts} />
+      <AudioProvider urls={audioUrls} />
       {/* 檔案夾外框 */}
       <div className="folder-skin relative mx-auto max-w-[700px] rounded-xl px-4 pb-6 pt-4 shadow-[0_12px_30px_var(--shadow)] sm:px-5">
         {/* 資料夾頭部：案號 · 日期步進器 · 播放控制 */}
         <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
           <span className="case-label">
             <span className={`lang-tag lang-${lang}`}>{LANG_TAG[lang]}</span>
-            {categoryZh} · CASE #{String(dayNumber).padStart(3, "0")}
+            {categoryZh && `${categoryZh} · `}CASE #{String(dayNumber).padStart(3, "0")}
           </span>
+          {/* 敬語階層：日文卡不標的話，讀的人不知道這些句子能對誰講 */}
+          {lesson.register && (
+            <span className="register-badge" data-testid="register">
+              敬語 <b>{lesson.register}</b>
+            </span>
+          )}
           <nav className="daynav ml-auto" aria-label="切換日期">
             {prevDate ? (
               <NavLink

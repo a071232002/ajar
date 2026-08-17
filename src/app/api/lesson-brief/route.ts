@@ -6,6 +6,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
+/** brief 裡帶回的已用主題上限（每語言每天一張，約等於 1.5 年） */
+const USED_THEMES_LIMIT = 500;
+
 const dayDiff = (a: string, b: string) =>
   Math.round(
     (Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / 86_400_000,
@@ -50,7 +53,16 @@ export async function GET(request: Request) {
       .select("background_zh, langs, primary_lang")
       .eq("id", uid)
       .maybeSingle(),
-    db.from("daily_lessons").select("theme_en").eq("user_id", uid).eq("lang", lang),
+    // 主題唯一性是 DB 層的 unique index（全歷史），所以這份清單原則上要給全。
+    // 但它每天長一筆，設個上限免得哪天整包 brief 被它撐爆；真的撞到更早的主題，
+    // POST /api/lesson 會回 409 並指出撞到哪一個，讓產卡端換一個重送。
+    db
+      .from("daily_lessons")
+      .select("theme_en")
+      .eq("user_id", uid)
+      .eq("lang", lang)
+      .order("lesson_date", { ascending: false })
+      .limit(USED_THEMES_LIMIT),
     db
       .from("vocab_items")
       .select("word, daily_lessons!inner(lesson_date, user_id, lang)")

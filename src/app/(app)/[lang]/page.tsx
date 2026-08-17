@@ -54,7 +54,7 @@ export default async function TodayPage({
       lesson={lesson}
       lang={lang}
       dayNumber={dayNumber}
-      categoryZh={categoryZh(lesson.chapters?.category ?? "")}
+      categoryZh={categoryZh(lesson.topics?.category ?? "")}
       prevDate={prevDate}
       nextDate={nextDate}
       audioUrls={audioUrls}

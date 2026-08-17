@@ -73,6 +73,13 @@ export default function LoginPage() {
             {pending ? "進入中…" : "進入"}
           </button>
         </form>
+
+        <p className="mt-6 text-center text-xs text-soft">
+          沒有帳號？
+          <a href="/guest" className="text-accent underline underline-offset-4">
+            先聽十句試試
+          </a>
+        </p>
       </div>
     </main>
   );

@@ -2,6 +2,10 @@ name: 每日產生學習卡語音
 
 # routine 於台北 05:00 產出卡片，這裡 05:30 接手把音檔補齊。
 # 冪等：只處理缺口，失敗隔天自動補跑。
+#
+# 英日分成兩個 job 平行跑，而且互不 needs——它們寫的是不同卡片的音檔，沒有順序
+# 關係。分開的實際理由是環境完全不同（Node + kokoro-js vs Python + torch +
+# misaki[ja]），擠在同一個 job 只會讓其中一邊的失敗連累另一邊。
 on:
   schedule:
     - cron: "30 21 * * *" # UTC 21:30 = 台北 05:30
@@ -10,9 +14,21 @@ on:
       lesson_date:
         description: "只處理某一天（YYYY-MM-DD），留空則處理最近幾張"
         required: false
+      guest:
+        description: "改為補訪客頁那十句的音檔（一次性）"
+        type: boolean
+        default: false
+
+env:
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+  # 音檔直寫 Supabase，補完要叫網站清掉讀取快取
+  APP_URL: https://ajar-two.vercel.app
+  CRON_SECRET: ${{ secrets.CRON_SECRET }}
 
 jobs:
-  generate:
+  english:
+    name: 英文
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -35,15 +51,55 @@ jobs:
           key: kokoro-82m-v1-onnx-q8
 
       - name: 產生缺少的語音
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          # 音檔直寫 Supabase，補完要叫網站清掉讀取快取
-          APP_URL: https://ajar-two.vercel.app
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          if [ -n "${{ inputs.lesson_date }}" ]; then
+          if [ "${{ inputs.guest }}" = "true" ]; then
+            node scripts/generate-audio.mjs --guest
+          elif [ -n "${{ inputs.lesson_date }}" ]; then
             node scripts/generate-audio.mjs --lesson-date "${{ inputs.lesson_date }}"
           else
             node scripts/generate-audio.mjs --limit 3
+          fi
+
+  japanese:
+    name: 日文
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12" # kokoro 目前不支援 3.13
+          cache: pip
+
+      - name: 安裝 ffmpeg 與 espeak-ng
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg espeak-ng
+
+      # torch（CPU 版）、Kokoro 權重、unidic 辭書加起來每次要下載近 1GB，
+      # 不快取的話光裝環境就吃掉大半個 job。
+      - name: 快取 pip 與模型
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/huggingface
+            ~/.local/share/unidic
+          key: kokoro-ja-v1-py312
+
+      - name: 安裝 Kokoro 與日語 G2P
+        run: |
+          python -m pip install --quiet --upgrade pip
+          # torch 裝 CPU 版就好，省下大量下載時間
+          pip install --quiet torch --index-url https://download.pytorch.org/whl/cpu
+          pip install --quiet "kokoro>=0.9.4" "misaki[ja]" numpy
+          # misaki[ja] 只帶 unidic 的下載器，辭書本體要另外抓（已快取則跳過）
+          python -m unidic download || echo "unidic 已存在"
+
+      - name: 產生缺少的語音
+        run: |
+          if [ "${{ inputs.guest }}" = "true" ]; then
+            python scripts/generate-audio-ja.py --guest
+          elif [ -n "${{ inputs.lesson_date }}" ]; then
+            python scripts/generate-audio-ja.py --lesson-date "${{ inputs.lesson_date }}"
+          else
+            python scripts/generate-audio-ja.py --limit 3
           fi

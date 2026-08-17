@@ -30,13 +30,24 @@ export async function POST(request: Request) {
     );
   }
 
-  const { chapter_id, content, replace, lang, topic_id, register } = parsed.data;
+  const { content, replace, lang, topic_id, register } = parsed.data;
   const db = createAdminClient();
   const today = taipeiToday();
 
   const owner = await resolveOwner(db, parsed.data.user_id);
   if ("error" in owner) return Response.json({ error: owner.error }, { status: 400 });
 
+  // 主題沒帶就從當天的預排補。prompt 有叫排程帶 topic_id，但它是選填、實測兩張卡
+  // 都沒帶，卡片上的分類就整條空掉。分類是預排時就決定好的事，不該靠生成端記得。
+  let topicId = topic_id ?? null;
+  if (!topicId) {
+    const { data: planned } = await db
+      .from("theme_plan")
+      .select("topic_id")
+      .eq("user_id", owner.userId).eq("lang", lang).eq("plan_date", today)
+      .maybeSingle<{ topic_id: string | null }>();
+    topicId = planned?.topic_id ?? null;
+  }
 
 
   // 明確要求覆寫時才刪。vocab_items 與 lesson_audio 靠 FK cascade 清掉，但 storage
@@ -64,10 +75,9 @@ export async function POST(request: Request) {
     .insert({
       user_id: owner.userId,
       lang,
-      topic_id: topic_id ?? null,
+      topic_id: topicId,
       register: register ?? null,
       lesson_date: today,
-      chapter_id: chapter_id ?? null,
       theme_en: content.theme.en,
       theme_zh: content.theme.zh,
       content,
@@ -77,8 +87,18 @@ export async function POST(request: Request) {
 
   if (insertError) {
     if (insertError.code === "23505") {
+      // 兩種撞法要分開講：撞今天的位置代表今天已經有卡（該停），撞主題代表這個
+      // 主題以前練過（該換一個重送）。混在一起講的話產卡端只能放棄，白白少一天。
+      const themeClash = insertError.message.includes("theme");
       return Response.json(
-        { error: "重複：今日卡片已存在，或主題已被使用過", detail: insertError.message },
+        {
+          error: themeClash
+            ? `主題「${content.theme.en}」以前用過了，換一個重送`
+            : "今天這個語言已經有卡片了；要覆蓋請帶 replace: true",
+          conflict: themeClash ? "theme" : "slot",
+          theme_en: themeClash ? content.theme.en : undefined,
+          detail: insertError.message,
+        },
         { status: 409 },
       );
     }

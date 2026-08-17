@@ -41,7 +41,7 @@ export default async function LessonByDatePage({
       lesson={lesson}
       lang={lang}
       dayNumber={dayNumber}
-      categoryZh={categoryZh(lesson.chapters?.category ?? "")}
+      categoryZh={categoryZh(lesson.topics?.category ?? "")}
       prevDate={prevDate}
       nextDate={nextDate}
       audioUrls={audioUrls}
