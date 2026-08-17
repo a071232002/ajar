@@ -1,5 +1,5 @@
-import Link from "next/link";
 import AudioProvider from "@/components/AudioProvider";
+import NavLink from "@/components/NavLink";
 import PlayButton from "@/components/PlayButton";
 import ReadDoneButton from "@/components/ReadDoneButton";
 import VariantTabs from "@/components/VariantTabs";
@@ -51,13 +51,13 @@ export default function LessonView({
           </span>
           <nav className="daynav ml-auto" aria-label="切換日期">
             {prevDate ? (
-              <Link
+              <NavLink
                 href={`/lesson/${prevDate}`}
                 className="daynav-step"
                 aria-label="前一張"
               >
                 ‹
-              </Link>
+              </NavLink>
             ) : (
               <span className="daynav-step is-off" aria-disabled="true">
                 ‹
@@ -67,13 +67,13 @@ export default function LessonView({
               {formatLessonDate(lesson.lesson_date)}
             </span>
             {nextDate ? (
-              <Link
+              <NavLink
                 href={`/lesson/${nextDate}`}
                 className="daynav-step"
                 aria-label="後一張"
               >
                 ›
-              </Link>
+              </NavLink>
             ) : (
               <span className="daynav-step is-off" aria-disabled="true">
                 ›

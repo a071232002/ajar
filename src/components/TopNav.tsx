@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import NavLink from "@/components/NavLink";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const ITEMS = [
@@ -13,7 +14,7 @@ export default function TopNav() {
   const pathname = usePathname();
 
   const linkCls = (href: string) =>
-    `px-1 py-1 text-[15px] ${
+    `nav-link px-1 py-1 text-[15px] ${
       pathname === href ? "font-medium text-ink" : "text-soft hover:text-ink"
     }`;
 
@@ -27,9 +28,9 @@ export default function TopNav() {
 
           <nav className="hidden items-center gap-6 sm:flex" aria-label="主選單">
             {ITEMS.map((it) => (
-              <Link key={it.href} href={it.href} className={linkCls(it.href)}>
+              <NavLink key={it.href} href={it.href} className={linkCls(it.href)}>
                 {it.label}
-              </Link>
+              </NavLink>
             ))}
             <ThemeToggle />
             <form action="/auth/signout" method="post">
@@ -52,15 +53,15 @@ export default function TopNav() {
         className="fixed inset-x-0 bottom-0 z-10 flex h-14 border-t border-folder-deep/50 bg-desk sm:hidden"
       >
         {ITEMS.map((it) => (
-          <Link
+          <NavLink
             key={it.href}
             href={it.href}
-            className={`flex w-1/2 items-center justify-center text-sm ${
+            className={`nav-link flex w-1/2 items-center justify-center text-sm ${
               pathname === it.href ? "font-medium text-ink" : "text-soft"
             }`}
           >
             {it.label}
-          </Link>
+          </NavLink>
         ))}
       </nav>
     </>

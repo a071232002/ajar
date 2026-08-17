@@ -369,3 +369,37 @@ a.daynav-step:hover {
     font-size: 13px;
   }
 }
+
+/* ── 導覽讀取中指示 ────────────────────────────────────────────────
+   頁面是 server component，點下去要等伺服器算完才換頁。沒有這個的話
+   畫面完全不動，使用者分不出「沒點到」還是「在等」。 */
+.nav-spinner {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  margin-left: 6px;
+  vertical-align: -1px;
+  border: 1.5px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  opacity: 0.65;
+  animation: nav-spin 0.6s linear infinite;
+}
+@keyframes nav-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-spinner { animation-duration: 2s; }
+}
+
+/* 日期步進器：轉圈時蓋掉箭頭，不要並排擠成兩個符號 */
+.daynav-step { position: relative; }
+.daynav-step:has(.nav-spinner) { color: transparent; }
+.daynav-step .nav-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: -5.5px 0 0 -5.5px;
+  color: var(--accent);
+  opacity: 1;
+}

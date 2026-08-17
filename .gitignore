@@ -43,3 +43,6 @@ Thumbs.db
 
 # Claude Code 本機執行狀態（排程 lock 等），非部署用
 /.claude/
+
+# 本機 DEMO 截圖
+/shot/
