@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { chapter_id, content } = parsed.data;
+  const { chapter_id, content, replace } = parsed.data;
   const db = createAdminClient();
   const today = taipeiToday();
 
@@ -39,6 +39,26 @@ export async function POST(request: Request) {
     .maybeSingle();
   if (!chapter) {
     return Response.json({ error: "chapter_id 不存在" }, { status: 400 });
+  }
+
+  // 明確要求覆寫時才刪。vocab_items 與 lesson_audio 靠 FK cascade 清掉，但 storage
+  // 的檔案不會跟著走（路徑是 {lesson_id}/{clip}.mp3，新卡是新 id），要自己收。
+  if (replace) {
+    const { data: stale } = await db
+      .from("daily_lessons")
+      .select("id")
+      .eq("lesson_date", today)
+      .maybeSingle();
+
+    if (stale) {
+      const { data: files } = await db.storage.from("lesson-audio").list(stale.id);
+      if (files?.length) {
+        await db.storage
+          .from("lesson-audio")
+          .remove(files.map((f) => `${stale.id}/${f.name}`));
+      }
+      await db.from("daily_lessons").delete().eq("id", stale.id);
+    }
   }
 
   const { data: lesson, error: insertError } = await db

@@ -113,6 +113,11 @@ export type LessonContent = z.infer<typeof lessonContentBase>;
 export const lessonSubmissionSchema = z.object({
   chapter_id: z.string().uuid(),
   content: lessonContentSchema,
+  /**
+   * 覆寫今天已存在的卡片。預設 false——排程重跑時要維持 409，不能默默改掉已讀的卡。
+   * 存在的理由：每天自動寫一張卡，寫壞了本來沒有任何補救手段，只能等隔天。
+   */
+  replace: z.boolean().optional().default(false),
 });
 
 /** 產卡端每天讀 brief 才動筆，寫作規則就掛在 brief 上，不靠本機文件同步 */
