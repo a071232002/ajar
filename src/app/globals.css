@@ -280,6 +280,10 @@ a.daynav-step:hover {
   background: var(--accent);
   transform: translateY(-5px);
 }
+/* 前導標籤（意思 1 / Key Point）不可被拆行，否則窄版會出現「意思」與「1」分家 */
+.hand-tag .lead {
+  white-space: nowrap;
+}
 .hand-tag .sub {
   font-weight: 400;
   font-size: 15px;

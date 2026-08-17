@@ -101,7 +101,8 @@ export default function LessonView({
         {c.meanings.map((m, i) => (
           <div key={i} className="sheet animate-sheet-in mb-4">
             <p className="hand-tag mb-3">
-              意思 {i + 1}<span className="sub">{m.title_zh}</span>
+              <span className="lead">意思 {i + 1}</span>
+              <span className="sub">{m.title_zh}</span>
             </p>
             <VariantTabs meaning={m} meaningIndex={i} />
           </div>
@@ -111,7 +112,8 @@ export default function LessonView({
         {c.key_points.map((k, i) => (
           <div key={i} className="sheet tilt-r animate-sheet-in mb-4">
             <p className="hand-tag mb-2.5">
-              Key Point<span className="sub">{k.title_zh}</span>
+              <span className="lead">Key Point</span>
+              <span className="sub">{k.title_zh}</span>
             </p>
             <p className="text-[14.5px]">{k.explain_zh}</p>
             <div className="say-row mt-3 rounded-md border-2 border-dashed border-accent px-4 py-3.5">
@@ -152,7 +154,8 @@ export default function LessonView({
         {/* 情境練習 */}
         <div className="sheet tilt-l animate-sheet-in mb-4">
           <p className="hand-tag mb-3">
-            情境練習<span className="sub">先自己寫寫看</span>
+            <span className="lead">情境練習</span>
+            <span className="sub">先自己寫寫看</span>
           </p>
           <p className="whitespace-pre-line text-[15px]">{c.exercise.prompt_zh}</p>
           <details className="mt-3">
