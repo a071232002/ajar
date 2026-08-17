@@ -113,8 +113,9 @@ body {
   background: var(--hl);
   color: #ffcc66;
   border-radius: 3px;
-  /* 內距壓小：跨行時 box-decoration-break 會讓每段各自加內距，太大會顯得零碎 */
+  /* 內距往外長（負 margin 抵銷），否則色塊會把後面的句點推開，看起來像多打了一個空格 */
   padding: 1px 3px;
+  margin: 0 -3px;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
