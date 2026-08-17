@@ -40,3 +40,6 @@ Thumbs.db
 
 # 本機截圖／驗證用的暫存圖（不進版）
 /*.png
+
+# Claude Code 本機執行狀態（排程 lock 等），非部署用
+/.claude/
