@@ -60,6 +60,13 @@ jobs:
             node scripts/generate-audio.mjs --limit 3
           fi
 
+      # 訪客頁的句子是固定的十句，補完就永遠不會再有缺口。之所以每天跑而不是
+      # 手動觸發一次：模型是延遲載入的，沒缺口時這一步只花一次 REST 查詢就結束，
+      # 但少了一個「有人記得去按」的前提。
+      - name: 補訪客頁缺的音檔
+        if: inputs.guest != true
+        run: node scripts/generate-audio.mjs --guest
+
   japanese:
     name: 日文
     runs-on: ubuntu-latest
@@ -103,3 +110,8 @@ jobs:
           else
             python scripts/generate-audio-ja.py --limit 3
           fi
+
+      # 同英文那一側：補完就沒缺口，沒缺口時不載模型，等於不花錢
+      - name: 補訪客頁缺的音檔
+        if: inputs.guest != true
+        run: python scripts/generate-audio-ja.py --guest
