@@ -140,26 +140,26 @@ export default function LessonView({
         {/* 對話 */}
         <div className="sheet animate-sheet-in mb-4">
           <p className="hand-tag mb-4">對話</p>
-          {c.dialogue.map((d, i) => (
-            <div key={i} className="say-row mb-4">
-              <PlayButton id={`dlg${i}`} clipKeys={[`dlg${i}`]} />
+          {c.dialogue.map((d, i) => {
+            const mine = d.side === "me";
+            // 同一個人連著講就不重複掛名字，讀起來才是一段話而不是兩則訊息
+            const carriedOn = i > 0 && c.dialogue[i - 1].side === d.side;
+            return (
               <div
-                className={`say-body border-l-2 pl-3.5 ${
-                  d.side === "me" ? "border-accent" : "border-folder-deep"
-                }`}
+                key={i}
+                className={`dlg ${mine ? "dlg-me" : "dlg-them"} ${carriedOn ? "dlg-cont" : ""}`}
               >
-                <p
-                  className={`mb-0.5 font-mono text-xs ${
-                    d.side === "me" ? "text-accent" : "text-soft"
-                  }`}
-                >
-                  {d.speaker_zh}
-                </p>
-                <p className="en">{renderMarked(d.en)}</p>
-                <p className="mt-1 text-sm text-soft">{d.zh}</p>
+                {!carriedOn && <p className="dlg-who">{d.speaker_zh}</p>}
+                <div className="say-row">
+                  <PlayButton id={`dlg${i}`} clipKeys={[`dlg${i}`]} />
+                  <div className="say-body">
+                    <p className="en">{renderMarked(d.en)}</p>
+                    <p className="mt-1 text-sm text-soft">{d.zh}</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* 情境練習 */}

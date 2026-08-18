@@ -592,6 +592,47 @@ a.daynav-step:hover {
 [data-theme="dark"] .lang-tag.lang-en { background: #3d88ad; }
 [data-theme="dark"] .lang-tag.lang-ja { background: #d4573f; }
 
+/* ── 對話 ────────────────────────────────────────────────────────
+   分邊靠的是縮排、色塊與缺角的方向，不是一條 2px 邊界的顏色差。
+   原本兩邊都齊左、只差邊框顏色，掃過去看不出這是一來一往。
+   刻意不做聊天泡泡的尖角：那個語彙跟整站的紙質對不起來；改用「一角收方、
+   其餘圓角」指方向，方向感有了，材質也還在。
+   內文一律齊左——把「我」這側的句子改成齊右會讓每行的起點跳動，英文長句尤其難讀。 */
+.dlg {
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--edge);
+}
+.dlg-them {
+  margin-right: clamp(14px, 12%, 90px);
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+  border-radius: 12px 12px 12px 3px;
+}
+.dlg-me {
+  margin-left: clamp(14px, 12%, 90px);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-radius: 12px 12px 3px 12px;
+}
+/* 「我」這側連播放鍵也鏡射到右邊，讓兩側的重心真的相反 */
+.dlg-me .say-row {
+  flex-direction: row-reverse;
+}
+.dlg-who {
+  margin-bottom: 5px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--soft);
+}
+.dlg-me .dlg-who {
+  text-align: right;
+  color: var(--accent);
+}
+/* 同一個人的第二句以後：拉近距離，視覺上併回同一輪發言 */
+.dlg-cont {
+  margin-top: -8px;
+}
+
 /* 敬語階層章：日文卡專屬，靠邊框而非底色，才不會跟語言標籤搶注意力 */
 .register-badge {
   display: inline-block;
