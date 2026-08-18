@@ -251,9 +251,14 @@ def run_lessons(db, tts, limit, only_date):
     work = []
     for lesson in lessons:
         existing = db.select(
-            "lesson_audio", f"lesson_id=eq.{lesson['id']}&select=clip_key"
+            "lesson_audio", f"lesson_id=eq.{lesson['id']}&select=clip_key,voice"
         )
-        done = {r["clip_key"] for r in existing}
+        # 語言不符的音檔要當成缺口重產。實際發生過：英文那支腳本一度沒有 lang
+        # 過濾，把日文卡拿去用英文聲音唸，線上聽起來就是外國腔。那些 row 在資料庫
+        # 裡是「已完成」，不認出來的話冪等邏輯會永遠跳過它們。
+        done = {
+            r["clip_key"] for r in existing if (r.get("voice") or "").startswith("j")
+        }
         missing = [c for c in voice_plan(clips_of(lesson["content"])) if c[0] not in done]
         if missing:
             work.append((lesson, missing))

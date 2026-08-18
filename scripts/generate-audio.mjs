@@ -211,9 +211,15 @@ async function main() {
   for (const lesson of lessons) {
     const { data: existing } = await db
       .from("lesson_audio")
-      .select("clip_key")
+      .select("clip_key, voice")
       .eq("lesson_id", lesson.id);
-    const done = new Set((existing ?? []).map((r) => r.clip_key));
+    // 語言不符的音檔要當成缺口重產，不能算數。實際發生過：這支腳本一度沒有
+    // lang 過濾，把日文卡拿去用英文聲音唸，線上聽起來就是外國腔。那些 row 在
+    // 資料庫裡是「已完成」，不特別認出來的話冪等邏輯會永遠跳過它們。
+    // 判斷方式用聲音代號的字首（日文是 jf_/jm_），比列舉語音池耐改。
+    const done = new Set(
+      (existing ?? []).filter((r) => !r.voice?.startsWith("j")).map((r) => r.clip_key),
+    );
     const missing = voicePlan(clipsOf(lesson.content)).filter((c) => !done.has(c.key));
     if (missing.length) work.push({ lesson, missing });
   }
