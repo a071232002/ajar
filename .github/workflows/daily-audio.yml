@@ -127,8 +127,18 @@ jobs:
           done
           exit $bad
 
-      - name: 安裝 ffmpeg 與 espeak-ng
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg espeak-ng
+      # 原本無條件 apt-get update && install ffmpeg espeak-ng，實測卡了 16 分鐘。
+      # 兩個套件都不必裝：ubuntu-latest 自帶 ffmpeg，而日語走的是 misaki[ja] →
+      # pyopenjtalk，跟 espeak-ng 無關（本機容器沒裝 espeak 也能產出）。
+      # 保留 fallback 以防 runner image 哪天不再自帶，並限時免得又卡住整個 job。
+      - name: 確認 ffmpeg
+        timeout-minutes: 5
+        run: |
+          if command -v ffmpeg >/dev/null 2>&1; then
+            ffmpeg -version | head -1
+          else
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
 
       # torch（CPU 版）、Kokoro 權重、unidic 辭書加起來每次要下載近 1GB，
       # 不快取的話光裝環境就吃掉大半個 job。
