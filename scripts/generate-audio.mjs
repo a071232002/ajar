@@ -189,12 +189,15 @@ async function main() {
     return console.log("\n完成。");
   }
 
+  // .select() 一定要排在所有 .eq() 之前：from() 回的是 query builder，篩選方法
+  // 在 select() 之後才拿得到。順序寫反會是 TypeError（.eq is not a function），
+  // 而不是型別錯誤或 400，所以 typecheck 與 build 都攔不到——只有真的跑才會炸。
   let query = db
     .from("daily_lessons")
+    .select("id, lesson_date, content")
     // 只處理英文：kokoro-js 的 phonemizer 只支援 en-us/en-gb，
     // 日文要走 misaki[ja]（Python），是另一條管線
     .eq("lang", "en")
-    .select("id, lesson_date, content")
     .order("lesson_date", { ascending: false })
     .limit(LIMIT);
   if (ONLY_DATE) query = query.eq("lesson_date", ONLY_DATE);

@@ -5,8 +5,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 /**
  * 訪客頁的句子。
  *
- * 內容是固定的十句，只有補音檔時會動，所以快取一小時。tag 用自己的，
- * 不跟 lessons 共用——每天產卡 revalidate 一次沒必要把這裡也清掉。
+ * tag 用自己的，不跟 lessons 共用——每天產卡 revalidate 一次沒必要把這裡也清掉。
+ *
+ * TTL 只給 120 秒（同 getAudioUrls 的理由）：這張表的兩種寫入端都繞過網站——
+ * 句子本身由 migration 灌進去，audio_path 由 GitHub Actions 直寫 Supabase——
+ * 所以沒有人保證會來 revalidate。實際踩過：seed 之前先開過訪客頁，那份空清單
+ * 就被鎖住一小時，頁面看起來像壞了。
  */
 export const TAG_GUEST = "guest";
 
@@ -43,5 +47,5 @@ export const getGuestPhrases = unstable_cache(
     }));
   },
   ["guest-phrases"],
-  { tags: [TAG_GUEST], revalidate: 3600 },
+  { tags: [TAG_GUEST], revalidate: 120 },
 );

@@ -6,6 +6,9 @@ name: 每日產生學習卡語音
 # 英日分成兩個 job 平行跑，而且互不 needs——它們寫的是不同卡片的音檔，沒有順序
 # 關係。分開的實際理由是環境完全不同（Node + kokoro-js vs Python + torch +
 # misaki[ja]），擠在同一個 job 只會讓其中一邊的失敗連累另一邊。
+#
+# env 掛在 job 層而不是 workflow 層：workflow 層讀不到 secrets context
+# （只看得到 github / vars / inputs），掛在那裡兩個變數都會是空字串。
 on:
   schedule:
     - cron: "30 21 * * *" # UTC 21:30 = 台北 05:30
@@ -38,6 +41,24 @@ jobs:
           node-version: 22
           cache: npm
 
+      # 這一步存在的理由：腳本自己的錯誤訊息留在 log 裡，而 log 要有權限才讀得到，
+      # 從外面看只有「exit code 1」四個字。::error:: 會變成 annotation，
+      # 不必進 log 就看得出是哪個變數沒設。
+      - name: 檢查環境變數
+        run: |
+          bad=0
+          for name in NEXT_PUBLIC_SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY CRON_SECRET; do
+            eval "value=\$$name"
+            if [ -z "$value" ]; then
+              echo "::error::$name 是空的——對應的 repository secret 沒設，或名稱不符"
+              bad=1
+            else
+              echo "$name 有值（長度 ${#value}）"
+            fi
+          done
+          echo "APP_URL=$APP_URL"
+          exit $bad
+
       - name: 安裝相依套件
         run: npm ci --no-audit --no-fund
 
@@ -52,12 +73,19 @@ jobs:
       - name: 產生缺少的語音
         run: |
           if [ "${{ inputs.guest }}" = "true" ]; then
-            node scripts/generate-audio.mjs --guest
+            set -- --guest
           elif [ -n "${{ inputs.lesson_date }}" ]; then
-            node scripts/generate-audio.mjs --lesson-date "${{ inputs.lesson_date }}"
+            set -- --lesson-date "${{ inputs.lesson_date }}"
           else
-            node scripts/generate-audio.mjs --limit 3
+            set -- --limit 3
           fi
+          # 同上：把 stderr 也升級成 annotation，失敗原因才不用開 log 才看得到
+          node scripts/generate-audio.mjs "$@" 2>err.txt || {
+            cat err.txt >&2
+            echo "::error::$(tr '\n' ' ' < err.txt | tail -c 800)"
+            exit 1
+          }
+          cat err.txt >&2 || true
 
       # 訪客頁的句子是固定的十句，補完就永遠不會再有缺口。之所以每天跑而不是
       # 手動觸發一次：模型是延遲載入的，沒缺口時這一步只花一次 REST 查詢就結束，
@@ -73,7 +101,6 @@ jobs:
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      # 音檔直寫 Supabase，補完要叫網站清掉讀取快取
       APP_URL: https://ajar-two.vercel.app
       CRON_SECRET: ${{ secrets.CRON_SECRET }}
     steps:
@@ -81,9 +108,24 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          # cache: pip 要有 requirements.txt / pyproject.toml 才能算 hash，這個
-          # repo 兩者都沒有，開了它 action 會直接失敗。pip 的快取在下面自己做。
+          # 不要開 cache: pip——它要有 requirements.txt / pyproject.toml 才能算
+          # hash，這個 repo 兩者都沒有，開了 action 會在裝 Python 之前就失敗。
+          # pip 的快取在下面自己做。
           python-version: "3.12" # kokoro 目前不支援 3.13
+
+      - name: 檢查環境變數
+        run: |
+          bad=0
+          for name in NEXT_PUBLIC_SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY CRON_SECRET; do
+            eval "value=\$$name"
+            if [ -z "$value" ]; then
+              echo "::error::$name 是空的——對應的 repository secret 沒設，或名稱不符"
+              bad=1
+            else
+              echo "$name 有值（長度 ${#value}）"
+            fi
+          done
+          exit $bad
 
       - name: 安裝 ffmpeg 與 espeak-ng
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg espeak-ng
@@ -111,12 +153,18 @@ jobs:
       - name: 產生缺少的語音
         run: |
           if [ "${{ inputs.guest }}" = "true" ]; then
-            python scripts/generate-audio-ja.py --guest
+            set -- --guest
           elif [ -n "${{ inputs.lesson_date }}" ]; then
-            python scripts/generate-audio-ja.py --lesson-date "${{ inputs.lesson_date }}"
+            set -- --lesson-date "${{ inputs.lesson_date }}"
           else
-            python scripts/generate-audio-ja.py --limit 3
+            set -- --limit 3
           fi
+          python scripts/generate-audio-ja.py "$@" 2>err.txt || {
+            cat err.txt >&2
+            echo "::error::$(tr '\n' ' ' < err.txt | tail -c 800)"
+            exit 1
+          }
+          cat err.txt >&2 || true
 
       # 同英文那一側：補完就沒缺口，沒缺口時不載模型，等於不花錢
       - name: 補訪客頁缺的音檔
