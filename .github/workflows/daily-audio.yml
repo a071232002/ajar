@@ -19,18 +19,17 @@ on:
         type: boolean
         default: false
 
-env:
-  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-  # 音檔直寫 Supabase，補完要叫網站清掉讀取快取
-  APP_URL: https://ajar-two.vercel.app
-  CRON_SECRET: ${{ secrets.CRON_SECRET }}
-
 jobs:
   english:
     name: 英文
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      # 音檔直寫 Supabase，補完要叫網站清掉讀取快取
+      APP_URL: https://ajar-two.vercel.app
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
     steps:
       - uses: actions/checkout@v4
 
@@ -71,13 +70,20 @@ jobs:
     name: 日文
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      # 音檔直寫 Supabase，補完要叫網站清掉讀取快取
+      APP_URL: https://ajar-two.vercel.app
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
+          # cache: pip 要有 requirements.txt / pyproject.toml 才能算 hash，這個
+          # repo 兩者都沒有，開了它 action 會直接失敗。pip 的快取在下面自己做。
           python-version: "3.12" # kokoro 目前不支援 3.13
-          cache: pip
 
       - name: 安裝 ffmpeg 與 espeak-ng
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg espeak-ng
@@ -88,6 +94,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
+            ~/.cache/pip
             ~/.cache/huggingface
             ~/.local/share/unidic
           key: kokoro-ja-v1-py312
