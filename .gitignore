@@ -42,8 +42,12 @@ Thumbs.db
 # 本機截圖／驗證用的暫存圖（不進版）
 /*.png
 
-# Claude Code 本機執行狀態（排程 lock 等），非部署用
+# 放在根目錄的暫存 HTML（例如別的專案的參考檔），不屬於這個 repo
+/*.html
+
+# AI 相關的文件、規劃與本機執行狀態，非部署用
 /.claude/
+/CLAUDE.md
 
 # 本機 DEMO 截圖
 /shot/
